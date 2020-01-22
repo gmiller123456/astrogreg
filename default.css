@@ -1,0 +1,22 @@
+	body {
+		font-size: .75em;
+		line-height: 1.6;
+	}
+	pre {font-size: 1.75em;}
+
+	.highlight {background: #aaaadd;}
+	.headertext {background: #F0F0F0;}
+
+	.formatlevel1 {background: #f0f0f0; border-style:solid; border-width: 1px;}
+	.formatlevel2 {background: #eeeeee; border-style:solid; border-width: 1px;}
+	.formatlevel3 {background: #cccccc; border-style:solid; border-width: 1px;}
+	.formatlevel4 {background: #aaaaaa; border-style:solid; border-width: 1px;}
+
+	@media screen and (min-width: 1000px) {
+	  body {
+	  	margin-left: 20%;
+	  	margin-right: 20%;
+	  	font-size: 1em;
+	  }
+	  pre {font-size: 1em;}
+	}
