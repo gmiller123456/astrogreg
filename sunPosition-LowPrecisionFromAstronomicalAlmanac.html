@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Low Precision Formula for Sun Position</title>
+<link rel="stylesheet" href="default.css">
+<link rel="stylesheet" href="highlight/styles/default.css">
+</head>
+<body>
+<body onload="calculate();">
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<h1>Low Precision Formula for Sun Position</h1>
+<p>Algorithm from the Astronomical Almanac, page C5 (2017 ed).  Accuracy 1deg from 1950-2050.</p>
+<div style='border-style: solid; border-width:1;'>
+<form>
+Compute Geocentric RA/DEC of Sun.<br>
+JD: <input size=8 type=text id='inputJD' value="2458850">
+<input type=button value='Calculate' onclick='calculate();'><br>
+<table>
+<tr><td>RA:</td><td> <input size=10 type=text id='outputRA'> Hours</td></tr>
+<tr><td>DEC:</td><td> <input size=10 type=text id="outputDEC"> Degrees</td></tr>
+</table>
+
+</form>
+</div>
+
+<script>
+function calculate(){
+	let radec=sunPosition(document.getElementById('inputJD').value-0);
+	document.getElementById("outputRA").value=radec[0];
+	document.getElementById("outputDEC").value=radec[1];
+}
+
+console.log(sunPosition(2458850));
+
+//Low precision sun position from Astronomical Almanac page C5 (2017 ed).
+//Accuracy 1deg from 1950-2050
+function sunPosition(jd)	{
+	const torad=Math.PI/180.0;
+	n=jd-2451545.0;
+	L=(280.460+0.9856474*n)%360;
+	g=((375.528+.9856003*n)%360)*torad;
+	if(L<0){L+=360;}
+	if(g<0){g+=Math.PI*2.0;}
+
+	lamba=(L+1.915*Math.sin(g)+0.020*Math.sin(2*g))*torad;
+	beta=0.0;
+	eps=(23.439-0.0000004*n)*torad;
+	ra=Math.atan2(Math.cos(eps)*Math.sin(lamba),Math.cos(lamba));
+	dec=Math.asin(Math.sin(eps)*Math.sin(lamba));
+	if(ra<0){ra+=Math.PI*2;}
+	return [ra/torad/15.0,dec/torad];
+}
+</script>
+
+<pre><code class="JavaScript">
+//Low precision sun position from Astronomical Almanac page C5 (2017 ed).
+//Accuracy 1deg from 1950-2050
+function sunPosition(jd)	{
+	const torad=Math.PI/180.0;
+	n=jd-2451545.0;
+	L=(280.460+0.9856474*n)%360;
+	g=((375.528+.9856003*n)%360)*torad;
+	if(L<0){L+=360;}
+	if(g<0){g+=Math.PI*2.0;}
+
+	lamba=(L+1.915*Math.sin(g)+0.020*Math.sin(2*g))*torad;
+	beta=0.0;
+	eps=(23.439-0.0000004*n)*torad;
+	ra=Math.atan2(Math.cos(eps)*Math.sin(lamba),Math.cos(lamba));
+	dec=Math.asin(Math.sin(eps)*Math.sin(lamba));
+	if(ra<0){ra+=Math.PI*2;}
+	return [ra/torad/15.0,dec/torad];
+}
+</code></pre>
+</body>
+</html>

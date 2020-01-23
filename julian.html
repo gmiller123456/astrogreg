@@ -3,21 +3,71 @@
 <head>
 	<title>Julian Dates</title>
 <link rel="stylesheet" href="default.css">
+<link rel="stylesheet" href="highlight/styles/default.css">
 
 </head>
-<body>
+<body onload="calculateAll();">
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
 JavaScript functions to convert to and from a Julian Date.  Algorithms from Astonomical Algorithms (Meeus).
+<div style='border-style: solid; border-width:1;'>
+<h3>Convert Gregorian Date to Julian Date:</h3>
+<form>
+	<input value="2017" size=4 type=text id='inputYear'> -
+	<input value="08" size=2 type=text id='inputMonth'> -
+	<input value="21" size=2 type=text id='inputDay'>&nbsp;&nbsp;
+	<input value="18" size=2 type=text id='inputHour'> :
+	<input value="25" size=2 type=text id='inputMin'> :
+	<input value="32" size=2 type=text id='inputSec'>
+	<input type=button value="Calculate" onclick="calculate1();"><br>
+	Julian Date: <input type=text id="outputJD">
+</form>
+</div>
+<p></p>
+<div style='border-style: solid; border-width:1;'>
+<h3>Convert Julian Date to Gregorian Date:</h3>
+<form>
+	Julian Date: <input type=text id="inputJD" value="2457987.267731481">
+	<input type=button value="Calculate" onclick="calculate2();"><br>
+	<input size=4 type=text id='outputYear'> -
+	<input size=2 type=text id='outputMonth'> -
+	<input size=2 type=text id='outputDay'>&nbsp;&nbsp;
+	<input size=2 type=text id='outputHour'> :
+	<input size=2 type=text id='outputMin'> :
+	<input size=2 type=text id='outputSec'>
+</form>
+</div>
 
-<pre>
-testDate(2017,8, 21,18,25,32,0);
-testDate(1582,10, 15,18,25,32,0);
-testDate(1582,10, 4,18,25,32,0);
-
-function testDate(year,month,day,hour,min,sec){
-	const jd1=dateToJulianDate(year,month,day,hour,min,sec);
-	console.log(`${jd1} - ${jd2} = ${Math.abs(jd1-jd2)}`);
+<script>
+function calculateAll(){
+	calculate1();
+	calculate2();
 }
 
+function calculate1(){
+	let year=document.getElementById("inputYear").value-0;
+	let month=document.getElementById("inputMonth").value-0;
+	let day=document.getElementById("inputDay").value-0;
+	let hour=document.getElementById("inputHour").value-0;
+	let min=document.getElementById("inputMin").value-0;
+	let sec=document.getElementById("inputSec").value-0;
+	document.getElementById("outputJD").value=gregorianDateToJulianDate(year,month,day,hour,min,sec);
+}
+
+function calculate2(){
+	data=julainDateToGregorian(document.getElementById("inputJD").value-0);
+	document.getElementById("outputYear").value=data[0];
+	document.getElementById("outputMonth").value=data[1];
+	document.getElementById("outputDay").value=data[2];
+	document.getElementById("outputHour").value=data[3];
+	document.getElementById("outputMin").value=data[4];
+	document.getElementById("outputSec").value=data[5];
+
+}
+</script>
+
+<script id='source1'>
 //Special "Math.floor()" function used by dateToJulianDate()
 function INT(d){
 	if(d>0){
@@ -26,16 +76,7 @@ function INT(d){
 	return Math.floor(d)-1;
 }
 
-function dateToJulianDate(year, month, day, hour, min, sec){
-	//From Meeus p61 (7.1)
-	/*
-	let year=date.getUTCFullYear();
-	let month=date.getUTCMonth()+1;
-	let day=date.getUTCDate();
-	let hour=date.getUTCHours();
-	let min=date.getUTCMinutes();
-	let sec=date.getUTCSeconds();
-*/
+function gregorianDateToJulianDate(year, month, day, hour, min, sec){
 	let isGregorian=true;
 	if(year<1582 || (year == 1582 && (month < 10 || (month==10 && day < 5)))){
 		isGregorian=false;
@@ -58,13 +99,6 @@ function dateToJulianDate(year, month, day, hour, min, sec){
 	jd+=sec/24.0/60.0/60.0;
 	return jd;
 }	
-</pre>
-
-
-<pre>
-julainDateToGregorian(2436116.31);
-julainDateToGregorian(1842713.0);
-julainDateToGregorian(1507900.13);
 
 //From Meeus, CH7
 function julainDateToGregorian(jd){
@@ -91,11 +125,79 @@ function julainDateToGregorian(jd){
 		year=C-4715;
 	}
 
-	console.log(year+"-"+month+"-"+day);
+	return [year,month,day,0,0,0];
+
+}
+</script>
+
+
+
+<pre><code class="JavaScript" id='code1'> 
+//Special "Math.floor()" function used by dateToJulianDate()
+function INT(d){
+	if(d>0){
+		return Math.floor(d);
+	}
+	return Math.floor(d)-1;
+}
+
+function gregorianDateToJulianDate(year, month, day, hour, min, sec){
+	let isGregorian=true;
+	if(year<1582 || (year == 1582 && (month < 10 || (month==10 && day < 5)))){
+		isGregorian=false;
+	}
+
+	if (month < 3){
+		year = year - 1;
+		month = month + 12;
+	}
+
+	let b = 0;
+	if (isGregorian){
+	let a = INT(year / 100.0);
+		b = 2 - a + INT(a / 4.0);
+	}
+
+	let jd=INT(365.25 * (year + 4716)) + INT(30.6001 * (month + 1)) + day + b - 1524.5;
+	jd+=hour/24.0;
+	jd+=min/24.0/60.0;
+	jd+=sec/24.0/60.0/60.0;
+	return jd;
+}	
+
+//From Meeus, CH7
+function julainDateToGregorian(jd){
+	let temp=jd+.5;
+	let Z=Math.trunc(temp);
+	let F=temp-Z;
+	let A=Z;
+	if(Z>=2299161){
+		let alpha=INT((Z-1867216.25)/36524.25);
+		A=Z+1+alpha-INT(alpha/4);
+	}
+	let B=A+1524;
+	let C=INT((B-122.1)/365.25);
+	let D=INT(365.25*C);
+	let E=INT((B-D)/30.6001);
+
+	let day=B-D-INT(30.6001*E)+F;
+	let month=E-1;
+	if(E>13){
+		month=E-13;
+	}
+	let year=C-4716;
+	if(month<3){
+		year=C-4715;
+	}
+
+	return [year,month,day,0,0,0];
 
 }
 
-
+</code>
 </pre>
+
+
+
 </body>
 </html>
