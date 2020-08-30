@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Rise and Set Algorithm for a given Lattitude/Longitude and RA/Dec</title>
+	<link rel="stylesheet" href="default.css">
+	<link rel="stylesheet" href="highlight/styles/default.css">
+
+
+</head>
+<body>
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<h1>Rise and Set Algorithm</h1>
+
+<form>
+<table>
+	<tr><td align=right>Julian Date:</td><td><input type=text id="jd"></td><td><input type=button value="Now" onclick='setJDToNow();'></td></tr>
+	<tr><td align=right>Lattitude:</td><td><input type=text id="lat"></td><td><input type=button value="Get Location"><td></tr>
+	<tr><td align=right>Longitude:</td><td><input type=text id="lon"></td></tr>
+	<tr><td align=right>Right Ascension:</td><td><input type=text id="ra"></td><td><input type=button value="Get Sun Position" onclick='setSunPosition();'></td></tr>
+	<tr><td align=right>Declination:</td><td><input type=text id="dec"></td></tr>
+	<tr><td></td><td><input type=button value="Compute" onclick="compute();"></td></tr>
+</table>
+</form>
+
+<table border=1 cellspacing="0">
+	<tr><td colspan=2 align=center><b>Output</b></td></tr>
+	<tr><td align=right>Rise:</td><td id='rise'></td></tr>
+	<tr><td align=right>Transit:</td><td id='transit'></td></tr>
+	<tr><td align=right>Set:</td><td id='set'></td></tr>
+</table>
+
+<p>
+The output is adjusted for the current time zone, which may differ from the time zone in effect for a different date (e.g. Daylight Saving Time)
+<p>
+
+A simplified implementation of the Rise, Set, and Transit algorithm from the book Astronomical Algorithms by Jean Meeus.  For objects whose position changes significantly over the course of they day (e.g. the Sun or Moon) it's more accurate to iteravley re-compute the object's position for each specific time for the event you're interested in.  The Sun is considered to be set when the entire Sun is below the horizon, not the center of it like for other objects.  Also atmospheric refraction causes the visual setting of an object to be later than the actual, geometric setting. Meeus' recommeneded values for <b>h0</b> are included in the code to correct for these effects, here I have hard coded the value for the Sun.
+
+<script>
+//By Greg Miller gmiller@gregmiller.net www.astrogreg.com
+//Released as public domain
+'use strict';
+const toRad=Math.PI/180.0;
+const toDeg=180.0/Math.PI;
+
+//Corrects values to make them between 0 and 1
+function constrain(v){
+	if(v<0){return v+1;}
+	if(v>1){return v-1;}
+	return v;
+}
+
+//All angles must be in radians
+//Outputs are times in hours GMT (not accounting for daylight saving time)
+//From Meeus Page 101
+function getRiseSet(jd,lat,lon,ra,dec){
+	const h0=-0.8333 //For Sun
+	//const h0=-0.5667 //For stars and planets
+	//const h0=0.125   //For Moon
+
+	const cosH=(Math.sin(h0*Math.PI/180.0)-Math.sin(lat)*Math.sin(dec)) / (Math.cos(lat)*Math.cos(dec));
+	const H0=Math.acos(cosH)*180.0/Math.PI;
+
+	const gmst=GMST(Math.floor(jd)+.5);
+
+	const transit=(ra*toDeg+lon*toDeg-gmst)/360.0;
+	const rise=transit-(H0/360.0);
+	const set=transit+(H0/360.0);
+
+	return [constrain(transit)*24.0,constrain(rise)*24.0,constrain(set)*24.0];
+}
+
+//Greenwhich mean sidreal time from Meeus page 87
+//Input is julian date, does not have to be 0h
+//Output is angle in degrees
+function GMST(jd){
+	const T=(jd-2451545.0)/36525.0;
+	let st=280.46061837+360.98564736629*(jd-2451545.0)+0.000387933*T*T - T*T*T/38710000.0;
+	st=st%360;
+	if(st<0){st+=360;}
+
+	return st;
+	//return st*Math.PI/180.0;
+}
+
+function exampleMeeus(){
+	const jd=2447240.5;
+	const lat=42.3333*toRad;
+	const lon=71.08333*toRad;
+	const gmst=177.74208*toRad;
+	const ra=41.73129*toRad;
+	const dec=18.44092*toRad;
+
+	const r=getRiseSet(jd,lat,lon,ra,dec);
+
+	document.getElementById('rise').innerHTML=formatTime(r[1]);
+	document.getElementById('transit').innerHTML=formatTime(r[0]);
+	document.getElementById('set').innerHTML=formatTime(r[2]);
+}
+
+
+function sunPosition(jd)	{
+	const torad=Math.PI/180.0;
+	const n=jd-2451545.0;
+	let L=(280.460+0.9856474*n)%360;
+	let g=((375.528+.9856003*n)%360)*torad;
+	if(L<0){L+=360;}
+	if(g<0){g+=Math.PI*2.0;}
+
+	const lamba=(L+1.915*Math.sin(g)+0.020*Math.sin(2*g))*torad;
+	const beta=0.0;
+	const eps=(23.439-0.0000004*n)*torad;
+	let ra=Math.atan2(Math.cos(eps)*Math.sin(lamba),Math.cos(lamba));
+	const dec=Math.asin(Math.sin(eps)*Math.sin(lamba));
+	if(ra<0){ra+=Math.PI*2;}
+	return [ra/torad/15.0,dec/torad];
+}	
+
+//Special "Math.floor()" function used by dateToJulianDate()
+function INT(d){
+	if(d>0){
+		return Math.floor(d);
+	}
+	return Math.floor(d)-1;
+}
+
+function gregorianDateToJulianDate(year, month, day, hour, min, sec){
+
+	let isGregorian=true;
+	if(year<1582 || (year == 1582 && (month < 10 || (month==10 && day < 5)))){
+		isGregorian=false;
+	}
+
+	if (month < 3){
+		year = year - 1;
+		month = month + 12;
+	}
+
+	let b = 0;
+	if (isGregorian){
+	let a = INT(year / 100.0);
+		b = 2 - a + INT(a / 4.0);
+	}
+
+	let jd=INT(365.25 * (year + 4716)) + INT(30.6001 * (month + 1)) + day + b - 1524.5;
+	jd+=hour/24.0;
+	jd+=min/24.0/60.0;
+	jd+=sec/24.0/60.0/60.0;
+	return jd;
+}	
+
+function formatTime(h){
+
+	const tz=(new Date().getTimezoneOffset())/60.0;
+
+	let t=h-tz;
+	if(t>=24){t-=24;}
+	if(t<0){t+=24;}
+
+
+	let hours=Math.floor(t);
+	t-=hours;
+	t*=60;
+	let min=Math.floor(t);
+	t-=min;
+	t*=60;
+	let sec=Math.floor(t);
+
+	if(hours<10){hours="0"+hours;}
+	if(min<10){min="0"+min;}
+	if(sec<10){sec="0"+sec;}
+
+	return hours+":"+min+":"+sec;
+
+}
+
+function compute(){
+	const jd=document.getElementById("jd").value;
+	const lat=document.getElementById("lat").value*Math.PI/180.0;
+	const lon=document.getElementById("lon").value*Math.PI/180.0;
+	const ra=document.getElementById("ra").value*Math.PI/180.0;
+	const dec=document.getElementById("dec").value*Math.PI/180.0;
+
+	const r=getRiseSet(jd,lat,lon,ra,dec);
+
+	document.getElementById('rise').innerHTML=formatTime(r[1]);
+	document.getElementById('transit').innerHTML=formatTime(r[0]);
+	document.getElementById('set').innerHTML=formatTime(r[2]);
+
+}
+
+function setJDToNow(){
+	const date=new Date();
+	const jd=gregorianDateToJulianDate(date.getYear()+1900,date.getMonth()+1,date.getDate(),date.getHours(),date.getMinutes(),date.getSeconds());
+	document.getElementById("jd").value=jd;
+}
+
+function setSunPosition(){
+	const jd=document.getElementById("jd").value;
+	const sun=sunPosition(jd);
+
+	document.getElementById("ra").value=sun[0]*15.0;
+	document.getElementById("dec").value=sun[1];
+}
+
+function example(){
+	setJDToNow();
+	setSunPosition();
+
+	document.getElementById("lat").value=38.2527;
+	document.getElementById("lon").value=85.7585;
+
+	compute();
+
+}
+example();
+//exampleMeeus();
+
+</script>
+<pre><code class="JavaScript" id='code1'> 
+//By Greg Miller gmiller@gregmiller.net www.astrogreg.com
+//Released as public domain
+const toRad=Math.PI/180.0;
+const toDeg=180.0/Math.PI;
+
+//Corrects values to make them between 0 and 1
+function constrain(v){
+	if(v<0){return v+1;}
+	if(v>1){return v-1;}
+	return v;
+}
+
+//All angles must be in radians
+//Outputs are times in hours GMT (not accounting for daylight saving time)
+//From Meeus Page 101
+function getRiseSet(jd,lat,lon,ra,dec){
+	const h0=-0.8333 //For Sun
+	//const h0=-0.5667 //For stars and planets
+	//const h0=0.125   //For Moon
+
+	const cosH=(Math.sin(h0*Math.PI/180.0)-Math.sin(lat)*Math.sin(dec)) / (Math.cos(lat)*Math.cos(dec));
+	const H0=Math.acos(cosH)*180.0/Math.PI;
+
+	const gmst=GMST(Math.floor(jd)+.5);
+
+	const transit=(ra*toDeg+lon*toDeg-gmst)/360.0;
+	const rise=transit-(H0/360.0);
+	const set=transit+(H0/360.0);
+
+	return [constrain(transit)*24.0,constrain(rise)*24.0,constrain(set)*24.0];
+}
+
+//Greenwhich mean sidreal time from Meeus page 87
+//Input is julian date, does not have to be 0h
+//Output is angle in degrees
+function GMST(jd){
+	const T=(jd-2451545.0)/36525.0;
+	let st=280.46061837+360.98564736629*(jd-2451545.0)+0.000387933*T*T - T*T*T/38710000.0;
+	st=st%360;
+	if(st<0){st+=360;}
+
+	return st;
+	//return st*Math.PI/180.0;
+}
+</code></pre>
+
+</body>
+</html>
