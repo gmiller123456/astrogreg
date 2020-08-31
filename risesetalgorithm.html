@@ -15,7 +15,7 @@
 <form>
 <table>
 	<tr><td align=right>Julian Date:</td><td><input type=text id="jd"></td><td><input type=button value="Now" onclick='setJDToNow();'></td></tr>
-	<tr><td align=right>Lattitude:</td><td><input type=text id="lat"></td><td><input type=button value="Get Location"><td></tr>
+	<tr><td align=right>Lattitude:</td><td><input type=text id="lat"></td><td><input type=button value="Get Location" onclick='getUserPosition();'><td></tr>
 	<tr><td align=right>Longitude:</td><td><input type=text id="lon"></td></tr>
 	<tr><td align=right>Right Ascension:</td><td><input type=text id="ra"></td><td><input type=button value="Get Sun Position" onclick='setSunPosition();'></td></tr>
 	<tr><td align=right>Declination:</td><td><input type=text id="dec"></td></tr>
@@ -35,6 +35,8 @@ The output is adjusted for the current time zone, which may differ from the time
 <p>
 
 A simplified implementation of the Rise, Set, and Transit algorithm from the book Astronomical Algorithms by Jean Meeus.  For objects whose position changes significantly over the course of they day (e.g. the Sun or Moon) it's more accurate to iteravley re-compute the object's position for each specific time for the event you're interested in.  The Sun is considered to be set when the entire Sun is below the horizon, not the center of it like for other objects.  Also atmospheric refraction causes the visual setting of an object to be later than the actual, geometric setting. Meeus' recommeneded values for <b>h0</b> are included in the code to correct for these effects, here I have hard coded the value for the Sun.
+<p>
+One important note, is that Meeus considers Longitudes in the West to be positive, and East negative, which is the opposite of how pretty much everything else works.  So, if you're using GPS coordinates, <b>remember to negate the longitude</b>.
 
 <script>
 //By Greg Miller gmiller@gregmiller.net www.astrogreg.com
@@ -187,6 +189,16 @@ function compute(){
 	document.getElementById('transit').innerHTML=formatTime(r[0]);
 	document.getElementById('set').innerHTML=formatTime(r[2]);
 
+}
+
+function getUserPosition(){
+	navigator.geolocation.getCurrentPosition(showPosition);
+}
+
+function showPosition(p){
+
+	document.getElementById("lat").value=p.coords.latitude;
+	document.getElementById("lon").value=-p.coords.longitude;
 }
 
 function setJDToNow(){
