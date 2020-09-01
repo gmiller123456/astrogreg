@@ -1,0 +1,369 @@
+ 
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Moon Position</title>
+  <link rel="stylesheet" href="default.css">
+  <link rel="stylesheet" href="highlight/styles/default.css">
+</head>
+<body>
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+
+<h1>Truncated Implementation of ELP-82</h1>
+This one is long enough that it can hardly be called a "snippet".  This is an implementation of the truncated version of ELP 2000/82 presented in Meeus' Astronomical Algorithms.  The output is
+the geocentric ecliptic latitude and longitude in degrees, and the distance in kilometers.  Since those coordinates aren't too
+useful to most amateurs on their own, I have also included routines to reduce the position to the RA/DEC of date corrected for
+parallax for a given location on Earth's surface.  I have not included routines for conversion from UTC to Dynamical Time, nor
+have I accounted for light time.  So, compared to JPL Horizons, which does implement those corrections, the results are off by
+about 30 arc seconds.  If your application requires it, adding in those adjustments should bring the agreement to within a few
+arc seconds, Meeus claims 4".  So just adding the UTC to TT conversion should produce accurate results, and further corrections
+likely won't produce better results.
+<p>
+The example below defaults to the example from Meeus' Astronomical Algorithms, page 342.  I have included a manual field for &Delta;T.
+To get a close match on the data from JPL Horizons use a &Delta;T of 68.6954, to reproduce the results from the book set &Delta;T to 0.  The results
+from JPL Horizons are 134.97583 13.33982 (topocentric), and the results from the book are 134.688470 13.768368 (geocentric).  If you look in the JavaScript Console
+I have computed the differences of the JPL data.  I have used Louisville, KY (85.7636,38.2464000) as the position for adjusting for parallax.
+
+<table border=1 cellspacing="0">
+  <tr><td align=right>JD:</td><td><input type=text id="JD"></td></tr>
+  <tr><td align=right>&Delta;T:</td><td><input type=text id="DT"></td></tr>
+  <tr><td align=right>Lattitude:</td><td><input type=text id="lat"></td></tr>
+  <tr><td align=right>Longitude:</td><td><input type=text id="lon"></td></tr>
+  <tr><td align=right>RA (of date):<br>geocentric</td><td id="gra"></td></tr>
+  <tr><td align=right>Dec (of date):<br>geocentric</td><td id="gdec"></td></tr>
+  <tr><td align=right>RA (of date):<br>topocentric</td><td id="ra"></td></tr>
+  <tr><td align=right>Dec (of date):<br>topocentric</td><td id="dec"></td></tr>
+  <tr><td align=right>Distance:</td><td id="distance"></td></tr>
+  <tr><td align=right></td><td><input type=button value="Compute" onclick="compute();"></td></tr>
+</table>
+<p>
+The ELP specific functions have been wrapped in their own class ELP82, the helper functions which convert the coordinates to something
+more useful are inline below the class.
+<script id="test">
+'use strict';
+const toRad=Math.PI/180.0;
+const toDeg=180.0/Math.PI;
+
+//By Greg Miller gmiller@gregmiller.net http://www.astrogreg.com
+//Released as public domain
+
+class ELP82{
+
+  //Chapront ELP2000/82 truncated implementation from Meeus
+  //Input is T in Julian centuries since J2000 in Dynamical Time (T=(JDE-2451545)/36525)
+  //Output is geocentric ecliptic longitude, latitude in degrees and distance in km
+  static elp82(T){  
+    const Lp = ELP82.constrain(218.3164477 + 481267.88123421*T - 0.0015786*T*T + 1.0/538841.0*T*T*T - 1.0/65194000.0*T*T*T*T)*toRad;
+    const D = ELP82.constrain(297.8501921 + 445267.1114034*T - 0.0018819*T*T + 1.0/545868.0*T*T*T - 1.0/113065000.0*T*T*T*T)*toRad;
+    const M = ELP82.constrain(357.5291092 + 35999.0502909*T - 0.0001536*T*T + 1.0/24490000.0*T*T*T)*toRad;
+    const Mp = ELP82.constrain(134.9633964 + 477198.8675055*T + 0.0087414*T*T + 1.0/69699.0*T*T*T - 1.0/14712000.0*T*T*T*T)*toRad;
+    const F = ELP82.constrain(93.2720950 + 483202.0175233*T - 0.0036539*T*T - 1.0/3526000.0*T*T*T + 1.0/863310000.0*T*T*T*T)*toRad;
+    const E = 1 - .002516*T - 0.0000074*T*T;
+    const A1=ELP82.constrain(119.75 + 131.849*T)*toRad;
+    const A2=ELP82.constrain(53.09 + 479264.290*T)*toRad;
+    const A3=ELP82.constrain(313.45 + 481266.484*T)*toRad;
+
+    const LongitudeRadius = [ 
+      //D   M  Mp   F    Long     Radius
+      [ 0,  0,  1,  0,  6288774, -20905335 ], 
+      [ 2,  0, -1,  0,  1274027,  -3699111 ], 
+      [ 2,  0,  0,  0,   658314,  -2955968 ], 
+      [ 0,  0,  2,  0,   213618,   -569925 ], 
+      [ 0,  1,  0,  0,  -185116,     48888 ], 
+      [ 0,  0,  0,  2,  -114332,     -3149 ], 
+      [ 2,  0, -2,  0,    58793,    246158 ], 
+      [ 2, -1, -1,  0,    57066,   -152138 ], 
+      [ 2,  0,  1,  0,    53322,   -170733 ], 
+      [ 2, -1,  0,  0,    45758,   -204586 ], 
+      [ 0,  1, -1,  0,   -40923,   -129620 ], 
+      [ 1,  0,  0,  0,   -34720,    108743 ], 
+      [ 0,  1,  1,  0,   -30383,    104755 ], 
+      [ 2,  0,  0, -2,    15327,     10321 ], 
+      [ 0,  0,  1,  2,   -12528,         0 ], 
+      [ 0,  0,  1, -2,    10980,     79661 ], 
+      [ 4,  0, -1,  0,    10675,    -34782 ], 
+      [ 0,  0,  3,  0,    10034,    -23210 ], 
+      [ 4,  0, -2,  0,     8548,    -21636 ], 
+      [ 2,  1, -1,  0,    -7888,     24208 ], 
+      [ 2,  1,  0,  0,    -6766,     30824 ], 
+      [ 1,  0, -1,  0,    -5163,     -8379 ], 
+      [ 1,  1,  0,  0,     4987,    -16675 ], 
+      [ 2, -1,  1,  0,     4036,    -12831 ], 
+      [ 2,  0,  2,  0,     3994,    -10445 ], 
+      [ 4,  0,  0,  0,     3861,    -11650 ], 
+      [ 2,  0, -3,  0,     3665,     14403 ], 
+      [ 0,  1, -2,  0,    -2689,     -7003 ], 
+      [ 2,  0, -1,  2,    -2602,         0 ], 
+      [ 2, -1, -2,  0,     2390,     10056 ], 
+      [ 1,  0,  1,  0,    -2348,      6322 ], 
+      [ 2, -2,  0,  0,     2236,     -9884 ], 
+      [ 0,  1,  2,  0,    -2120,      5751 ], 
+      [ 0,  2,  0,  0,    -2069,         0 ], 
+      [ 2, -2, -1,  0,     2048,     -4950 ], 
+      [ 2,  0,  1, -2,    -1773,      4130 ], 
+      [ 2,  0,  0,  2,    -1595,         0 ], 
+      [ 4, -1, -1,  0,     1215,     -3958 ], 
+      [ 0,  0,  2,  2,    -1110,         0 ], 
+      [ 3,  0, -1,  0,     -892,      3258 ], 
+      [ 2,  1,  1,  0,     -810,      2616 ], 
+      [ 4, -1, -2,  0,      759,     -1897 ], 
+      [ 0,  2, -1,  0,     -713,     -2117 ], 
+      [ 2,  2, -1,  0,     -700,      2354 ], 
+      [ 2,  1, -2,  0,      691,         0 ], 
+      [ 2, -1,  0, -2,      596,         0 ], 
+      [ 4,  0,  1,  0,      549,     -1423 ], 
+      [ 0,  0,  4,  0,      537,     -1117 ], 
+      [ 4, -1,  0,  0,      520,     -1571 ], 
+      [ 1,  0, -2,  0,     -487,     -1739 ], 
+      [ 2,  1,  0, -2,     -399,         0 ], 
+      [ 0,  0,  2, -2,     -381,     -4421 ], 
+      [ 1,  1,  1,  0,      351,         0 ], 
+      [ 3,  0, -2,  0,     -340,         0 ], 
+      [ 4,  0, -3,  0,      330,         0 ], 
+      [ 2, -1,  2,  0,      327,         0 ], 
+      [ 0,  2,  1,  0,     -323,      1165 ], 
+      [ 1,  1, -1,  0,      299,         0 ], 
+      [ 2,  0,  3,  0,      294,         0 ], 
+      [ 2,  0, -1, -2,        0,      8752 ] 
+    ]; 
+     
+    const Latitude = [ 
+      [ 0,  0,  0,  1, 5128122 ], 
+      [ 0,  0,  1,  1,  280602 ], 
+      [ 0,  0,  1, -1,  277693 ], 
+      [ 2,  0,  0, -1,  173237 ], 
+      [ 2,  0, -1,  1,   55413 ], 
+      [ 2,  0, -1, -1,   46271 ], 
+      [ 2,  0,  0,  1,   32573 ], 
+      [ 0,  0,  2,  1,   17198 ], 
+      [ 2,  0,  1, -1,    9266 ], 
+      [ 0,  0,  2, -1,    8822 ], 
+      [ 2, -1,  0, -1,    8216 ], 
+      [ 2,  0, -2, -1,    4324 ], 
+      [ 2,  0,  1,  1,    4200 ], 
+      [ 2,  1,  0, -1,   -3359 ], 
+      [ 2, -1, -1,  1,    2463 ], 
+      [ 2, -1,  0,  1,    2211 ], 
+      [ 2, -1, -1, -1,    2065 ], 
+      [ 0,  1, -1, -1,   -1870 ], 
+      [ 4,  0, -1, -1,    1828 ], 
+      [ 0,  1,  0,  1,   -1794 ], 
+      [ 0,  0,  0,  3,   -1749 ], 
+      [ 0,  1, -1,  1,   -1565 ], 
+      [ 1,  0,  0,  1,   -1491 ], 
+      [ 0,  1,  1,  1,   -1475 ], 
+      [ 0,  1,  1, -1,   -1410 ], 
+      [ 0,  1,  0, -1,   -1344 ], 
+      [ 1,  0,  0, -1,   -1335 ], 
+      [ 0,  0,  3,  1,    1107 ], 
+      [ 4,  0,  0, -1,    1021 ], 
+      [ 4,  0, -1,  1,     833 ], 
+      [ 0,  0,  1, -3,     777 ], 
+      [ 4,  0, -2,  1,     671 ], 
+      [ 2,  0,  0, -3,     607 ], 
+      [ 2,  0,  2, -1,     596 ], 
+      [ 2, -1,  1, -1,     491 ], 
+      [ 2,  0, -2,  1,    -451 ], 
+      [ 0,  0,  3, -1,     439 ], 
+      [ 2,  0,  2,  1,     422 ], 
+      [ 2,  0, -3, -1,     421 ], 
+      [ 2,  1, -1,  1,    -366 ], 
+      [ 2,  1,  0,  1,    -351 ], 
+      [ 4,  0,  0,  1,     331 ], 
+      [ 2, -1,  1,  1,     315 ], 
+      [ 2, -2,  0, -1,     302 ], 
+      [ 0,  0,  1,  3,    -283 ], 
+      [ 2,  1,  1, -1,    -229 ], 
+      [ 1,  1,  0, -1,     223 ], 
+      [ 1,  1,  0,  1,     223 ], 
+      [ 0,  1, -2, -1,    -220 ], 
+      [ 2,  1, -2, -1,    -220 ], 
+      [ 1,  0,  1,  1,    -185 ], 
+      [ 2, -1, -2, -1,     181 ], 
+      [ 0,  1,  2,  1,    -177 ], 
+      [ 4,  0, -2, -1,     176 ], 
+      [ 4, -1, -1, -1,     166 ], 
+      [ 1,  0,  1, -1,    -164 ], 
+      [ 4,  0,  1, -1,     132 ], 
+      [ 1,  0, -1, -1,    -119 ], 
+      [ 4, -1,  0, -1,     115 ], 
+      [ 2, -2,  0,  1,     107 ] 
+    ]; 
+
+
+    let Lon=0;
+    let Radius=0;
+    for(let i=0;i<LongitudeRadius.length;i++){
+      const t=LongitudeRadius[i];
+      const a=D*t[0] + M*t[1] + Mp*t[2] + F*t[3];
+
+      let e=1;
+      if(t[1]==1 || t[1]==-1){e=E;}
+      if(t[1]==2 || t[1]==-2){e=E*E;}
+
+      Lon+=e*t[4]*Math.sin(a);
+      Radius+=e*t[5]*Math.cos(a);
+    }
+
+    let Lat=0;
+    for(let i=0;i<Latitude.length;i++){
+      const t=Latitude[i];
+      const a=D*t[0] + M*t[1] + Mp*t[2] + F*t[3];
+
+      let e=1;
+      if(t[1]==1 || t[1]==-1){e=E;}
+      if(t[1]==2 || t[1]==-2){e=E*E;}
+
+      Lat+=e*t[4]*Math.sin(a);
+    }
+
+    const aLon=3958*Math.sin(A1) + 1962*Math.sin(Lp-F) + 318*Math.sin(A2);
+    const aLat=-2235*Math.sin(Lp) + 382*Math.sin(A3) + 175*Math.sin(A1-F) + 175*Math.sin(A1+F) + 127*Math.sin(Lp-Mp) - 115*Math.sin(Lp+Mp);
+
+
+    Lon=Lp*toDeg + (Lon+aLon)/1000000;
+    Radius=385000.56 + Radius/1000;
+    Lat=(Lat+aLat)/1000000;
+
+
+    return [Lon,Lat,Radius];
+  }
+
+  static constrain(d){
+    let t=d;
+    t=t%360;
+    if(t<0){t+=360;}
+    return t;
+  }
+
+  static JDEtoT(jde){
+    return (jde-2451545)/36525.0
+  }
+}
+
+//Simplified nutation from Meeus P 144, accurate to 0.5"
+//Reused fundamental argument equations from ELP 82 function.
+function nutation(T){
+  const L = ELP82.constrain(280.4665 + 36000.7698*T)*toRad;
+  const Lp = ELP82.constrain(218.3164477 + 481267.88123421*T - 0.0015786*T*T + 1.0/538841.0*T*T*T - 1.0/65194000.0*T*T*T*T)*toRad;
+  const O = ELP82.constrain(125.04452 - 1934.136261*T + 0.0020708*T*T + 1.0/450000*T*T*T)*toRad;
+
+  const dPsi=-17.20*Math.sin(O) - 1.32*Math.sin(2*L) - 0.23*Math.sin(2*Lp) + 0.21*Math.sin(2*O); //Meeus P 144
+  const dEps=9.20*Math.cos(O) + 0.57*Math.cos(2*L) + 0.10*Math.cos(2*Lp) - 0.09*Math.cos(2*O);
+
+  return [dPsi,dEps];
+
+}
+
+function obliquity(T){
+  //const e0=84381.448 - 4680.93*T - 1.55*T*T + 1999.25*T*T*T - 51.38*T*T*T*T - 249.67*T*T*T*T*T + 39.05*T*T*T*T*T*T + 7.12*T*T*T*T*T*T*T + 27.87*T*T*T*T*T*T*T*T + 5.79*T*T*T*T*T*T*T*T*T + 2.45*T*T*T*T*T*T*T*T*T*T; //Meeus 22.3
+  const eps0 = 84381.448 + -46.8150*T + -0.00059*T*T + 0.001813*T*T*T; //Explanatory Supplement 3.222-1
+  return eps0;
+}
+
+function eclipticToEquitorial(ec,T){
+  const n=nutation(T);
+  const eps=(obliquity(T) + n[1])/60.0/60.0*toRad;
+
+  const lamda=(ec[0]+n[0]/60/60)*toRad;
+  const B=ec[1]*toRad;
+
+  const ra=Math.atan2(Math.sin(lamda)*Math.cos(eps) - Math.tan(B)*Math.sin(eps),Math.cos(lamda));
+  const dec=Math.asin(Math.sin(B)*Math.cos(eps) + Math.cos(B)*Math.sin(eps)*Math.sin(lamda));
+
+  return [ra*toDeg,dec*toDeg,ec[2]];
+}
+
+function getGMST(ut1){
+  const D=ut1 - 2451545.0;
+  const T = D/36525.0;
+  let gmst = (280.46061837 + 360.98564736629*D + 0.000387933*T*T - T*T*T/38710000.0) %360.0;
+  if(gmst<0){gmst+=360;}
+  return gmst/15;
+}
+
+//Based on Meeus 40.2 and 40.3
+function geocentric2Topocentric(equatorial, longitude, latitude, altitude, JD){
+
+  const ra=equatorial[0]*toRad;
+  const dec=equatorial[1]*toRad;
+  const radius=equatorial[2];
+
+  const latitudeR=latitude*toRad;
+
+  //Meeus P 82
+  const u = Math.atan(0.99664719 * Math.tan(latitudeR));
+  const rs = 0.99664719 * Math.sin(u) + (altitude/6378140 * Math.sin(latitudeR));
+  const rc = Math.cos(u) + (altitude/6378140 * Math.cos(latitudeR));
+
+  const pi = Math.asin(6378.14 / radius);
+
+  const gmst = getGMST(JD)*15;
+  const H = (gmst - longitude - ra*toDeg)*toRad;
+
+  const dra = Math.atan2(-rc * Math.sin(pi)*Math.sin(H), Math.cos(dec) - rc * Math.sin(pi) * Math.cos(H)); 
+
+  const rap = ELP82.constrain((ra + dra)*toDeg);
+  const decp = Math.atan2((Math.sin(dec) - rs * Math.sin(pi)) * Math.cos(dra), Math.cos(dec) - rc * Math.sin(pi) * Math.cos(H)) * toDeg;
+
+  return [rap,decp,radius];
+}
+
+function compute(){
+  const DT=document.getElementById("DT").value/60/60/24;
+  const JD=document.getElementById("JD").value-0;
+  const lat=document.getElementById("lat").value-0;
+  let lon=document.getElementById("lon").value-0;
+  lon=-lon; //ALERT!!!!  Meeus considers West longitudes to be positive, which is the opposite of how everything else uses it.
+
+  const JDE=JD+DT;
+  const T=ELP82.JDEtoT(JDE);
+  
+  const ecliptic=ELP82.elp82(T);
+  console.log(ecliptic);
+  
+  const equatorial=eclipticToEquitorial(ecliptic,T);
+  console.log(equatorial);
+  console.log(equatorial[0]-134.69720); //Values from JPL Horizons geocentric
+  console.log(equatorial[1]-13.76513);
+
+  const topocentric=geocentric2Topocentric(equatorial,lon,lat,0,JDE);
+  console.log(topocentric);
+  console.log((topocentric[0]-134.97583)); //Values from JPL Horizons for Louisville, KY
+  console.log((topocentric[1]-13.33982));
+
+  document.getElementById("gra").innerHTML=equatorial[0] + " degrees";
+  document.getElementById("gdec").innerHTML=equatorial[1] + " degrees";
+  document.getElementById("ra").innerHTML=topocentric[0] + " degrees";
+  document.getElementById("dec").innerHTML=topocentric[1] + " degrees";
+  document.getElementById("distance").innerHTML=topocentric[2] + " km";
+}
+
+function exampleMeeus(){
+  document.getElementById("JD").value="2448724.5";
+  document.getElementById("DT").value="68.6954";
+  document.getElementById("lat").value="38.2464000";
+  document.getElementById("lon").value="-85.7636";
+
+  compute();
+}
+
+exampleMeeus();
+</script>
+
+<pre><code class="JavaScript" id='code1'> 
+</code>
+</pre>
+
+<script>
+  let s=document.getElementById("test").innerHTML;
+  s=s.replace(/</g,"&lt;");
+  s=s.replace(/>/g,"&gt;");
+  document.getElementById("code1").innerHTML=s;
+</script>
+
+
+</body>
+</html>
