@@ -1,0 +1,261 @@
+<html></html>
+<head>
+    <title>Celestial Programming: Moon Phases</title>
+</head>    
+<body>
+    <center><h1>Celestial Programming: Moon Phases</h1></center>
+    This is an implementation of the algorithm from Meeus' Astronomical Algorithms for computing the dates of the phases of the Moon.  View the source code of this page
+    for the code, the code is public domain.  The main algorithm is based on "lunation cycles", and since no one knows what those are, a helper function getCycleEstimate(year,month)
+    is available.  The value returned from that truly is an estimate, so the user should compute phases for cycles both before and after the cycle returned.  In one of the examples
+    in the book, Meeus uses the middle of the month as an estimate, and it might appear this is a sufficient method of getting all of the phases in a month, but it is not.  Months
+    are longer than lunation cycles, and if you always use the middle of the month as a starting estimate, you will eventually skip a lunation cycle.  This page serves as an example
+    of how to compute phases for an entire year, but the main algorith is the getPhaseDate() function.
+    <p></p>
+    <form>
+        Year <select name="inputYear" id="inputYear" onchange="compute()"></select>
+    </form>
+<pre id='output'></pre>
+<script>
+
+/*
+Greg Miller gmiller@gregmiller.net
+Algorithm from Meeus Astronomical Algorithms for computing dates of moon phases
+Released as public domain
+www.celestialprogramming.com
+*/
+
+const months=["Jan","Feb","Mar","Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const year=new Date().getFullYear();
+addYearsToSelect(year);
+computePhases(year);
+
+function mod360(f){
+    let t=f%360;
+    if(t<0)t+=360;
+    return t;
+}
+
+/*
+Year - integer year
+Month - integer month, January = 0
+
+Gets an estimate of the cycle number to be passed into getPhaseDate().  Since this
+is just an estimate, the user should also compute phase dates for cycles before and after
+the cycle number returned from this function
+*/
+
+function getCycleEstimate(year,month){
+    const yearfrac=(month*30+15)/365;  //Estimate fraction of year
+    let k=12.3685*((year + yearfrac) - 2000);  //49.2
+    k=Math.floor(k);
+
+    return k;
+}
+
+/*
+Gets the given phase within a given cycle number based on the year 2000.  Compute cycle
+estimate using getCycleEstimate() above.
+
+cycle - integer cycle number from getCycleEstimate()
+phase - 0 = new, .25 = first quarter, .5 = full, .75 = last quarter, all other values are invalid
+
+returns JD of specified phase in TDB time scale.
+*/
+
+//From Meeus ch49
+function getPhaseDate(cycle,phase){
+    const k=cycle+phase;
+
+    const toRad=Math.PI/180;
+
+    const T = k/1236.85; //49.3
+    let JDE = 2451550.09766 + 29.530588861*k + 0.00015437*T*T - 0.000000150*T*T*T + 0.00000000073*T*T*T*T; //49.1
+
+    const E = 1 - 0.002516*T - 0.0000074*T*T; //47.6
+
+    const M = mod360(2.5534 + 29.10535670*k - 0.0000014*T*T - 0.00000011*T*T*T)*toRad; //49.4
+    const Mp = mod360(201.5643 + 385.81693528*k + 0.0107582*T*T + 0.00001238*T*T*T - 0.000000058*T*T*T*T)*toRad; //49.5
+    const F = mod360(160.7108 + 390.67050284*k - 0.0016118*T*T - 0.00000227*T*T*T + 0.000000011*T*T*T*T)*toRad; //49.6
+    const Om = mod360(124.7746 - 1.56375588*k + 0.0020672*T*T + 0.00000215*T*T*T)*toRad; //49.7
+
+    //P351-352
+    const A1 = mod360(299.77 + 0.107408*k - 0.009173*T*T)*toRad;
+    const A2 = mod360(251.88 + 0.016321*k)*toRad;
+    const A3 = mod360(251.83 + 26.651886*k)*toRad;
+    const A4 = mod360(349.42 + 36.412478*k)*toRad;
+    const A5 = mod360(84.66 + 18.206239*k)*toRad;
+    const A6 = mod360(141.74 + 53.303771*k)*toRad;
+    const A7 = mod360(207.14 + 2.453732*k)*toRad;
+    const A8 = mod360(154.84 + 7.306860*k)*toRad;
+    const A9 = mod360(34.52 + 27.261239*k)*toRad;
+    const A10 = mod360(207.19 + 0.121824*k)*toRad;
+    const A11 = mod360(291.34 + 1.844379*k)*toRad;
+    const A12 = mod360(161.72 + 24.198154*k)*toRad;
+    const A13 = mod360(239.56 + 25.513099*k)*toRad;
+    const A14 = mod360(331.55 + 3.592518*k)*toRad;
+
+    if (phase == 0) {
+        correction = 0.00002*Math.sin(4*Mp) + -0.00002*Math.sin(3*Mp + M) + -0.00002*Math.sin(Mp - M - 2*F) + 0.00003*Math.sin(Mp - M + 2*F) + -0.00003*Math.sin(Mp + M + 2*F) +
+            0.00003*Math.sin(2*Mp + 2*F) + 0.00003*Math.sin(Mp + M - 2*F) + 0.00004*Math.sin(3*M) + 0.00004*Math.sin(2*Mp - 2*F) + -0.00007*Math.sin(Mp + 2*M) + -0.00017*Math.sin(Om) +
+            -0.00024*E*Math.sin(2*Mp - M) + 0.00038*E*Math.sin(M - 2*F) + 0.00042*E*Math.sin(M + 2*F) + -0.00042*Math.sin(3*Mp) + 0.00056*E*Math.sin(2*Mp + M) + -0.00057*Math.sin(Mp + 2*F) +
+            -0.00111*Math.sin(Mp - 2*F) + 0.00208*E*E*Math.sin(2*M) + -0.00514*E*Math.sin(Mp + M) + 0.00739*E*Math.sin(Mp - M) + 0.01039*Math.sin(2*F) + 0.01608*Math.sin(2*Mp) +
+            0.17241*E*Math.sin(M) + -0.40720*Math.sin(Mp);
+    } else if ((phase == 0.25) || (phase == 0.75)) {
+        correction = -0.00002*Math.sin(3*Mp + M) + 0.00002*Math.sin(Mp - M + 2*F) + 0.00002*Math.sin(2*Mp - 2*F) + 0.00003*Math.sin(3*M) + 0.00003*Math.sin(Mp + M - 2*F) + 0.00004*Math.sin(Mp - 2*M) +
+            -0.00004*Math.sin(Mp + M + 2*F) + 0.00004*Math.sin(2*Mp + 2*F) + -0.00005*Math.sin(Mp - M - 2*F) + -0.00017*Math.sin(Om) + 0.00027*E*Math.sin(2*Mp + M) + -0.00028*E*E*Math.sin(Mp + 2*M) +
+            0.00032*E*Math.sin(M - 2*F) + 0.00032*E*Math.sin(M + 2*F) + -0.00034*E*Math.sin(2*Mp - M) + -0.00040*Math.sin(3*Mp) + -0.00070*Math.sin(Mp + 2*F) + -0.00180*Math.sin(Mp - 2*F) +
+            0.00204*E*E*Math.sin(2*M) + 0.00454*E*Math.sin(Mp - M) + 0.00804*Math.sin(2*F) + 0.00862*Math.sin(2*Mp) + -0.01183*E*Math.sin(Mp + M) + 0.17172*E*Math.sin(M) + -0.62801*Math.sin(Mp);    
+
+        const W = 0.00306 - 0.00038*E*Math.cos(M) + 0.00026*Math.cos(Mp) - 0.00002*Math.cos(Mp - M) + 0.00002*Math.cos(Mp + M) + 0.00002*Math.cos(2*F);
+        if (phase == 0.25){
+            correction += W;
+        } else {
+            correction -= W;
+        }
+
+    } else if (phase == 0.5) {
+        correction = 0.00002*Math.sin(4*Mp) + -0.00002*Math.sin(3*Mp + M) + -0.00002*Math.sin(Mp - M - 2*F) + 0.00003*Math.sin(Mp - M + 2*F) + -0.00003*Math.sin(Mp + M + 2*F) + 0.00003*Math.sin(2*Mp + 2*F) +
+            0.00003*Math.sin(Mp + M - 2*F) + 0.00004*Math.sin(3*M) + 0.00004*Math.sin(2*Mp - 2*F) + -0.00007*Math.sin(Mp + 2*M) + -0.00017*Math.sin(Om) + -0.00024*E*Math.sin(2*Mp - M) +
+            0.00038*E*Math.sin(M - 2*F) + 0.00042*E*Math.sin(M + 2*F) + -0.00042*Math.sin(3*Mp) + 0.00056*E*Math.sin(2*Mp + M) + -0.00057*Math.sin(Mp + 2*F) + -0.00111*Math.sin(Mp - 2*F) +
+            0.00209*E*E*Math.sin(2*M) + -0.00514*E*Math.sin(Mp + M) + 0.00734*E*Math.sin(Mp - M) + 0.01043*Math.sin(2*F) + 0.01614*Math.sin(2*Mp) + 0.17302*E*Math.sin(M) + -0.40614*Math.sin(Mp);
+    }
+
+    JDE+=correction;
+
+    //Additional corrections P 252
+    correction = 0.000325*Math.sin(A1) + 0.000165*Math.sin(A2) + 0.000164*Math.sin(A3) + 0.000126*Math.sin(A4) + 0.000110*Math.sin(A5) + 0.000062*Math.sin(A6) + 0.000060*Math.sin(A7) +
+        0.000056*Math.sin(A8) + 0.000047*Math.sin(A9) + 0.000042*Math.sin(A10) + 0.000040*Math.sin(A11) + 0.000037*Math.sin(A12) + 0.000035*Math.sin(A13) + 0.000023*Math.sin(A14);
+    
+    JDE += correction;
+
+    return JDE;
+}
+
+//-------------------------------------------------Functions below are utility functions and not part of the main algorithm
+
+//Special "Math.floor()" function used by dateToJulianDate()
+function INT(d){
+	if(d>0){
+		return Math.floor(d);
+	}
+	if(d==Math.floor(d)){
+		return d;
+	}
+	return Math.floor(d)-1;
+}
+
+function gregorianDateToJulianDate(year, month, day, hour, min, sec){
+	let isGregorian=true;
+	if(year<1582 || (year == 1582 && (month < 10 || (month==10 && day < 5)))){
+		isGregorian=false;
+	}
+
+	if (month < 3){
+		year = year - 1;
+		month = month + 12;
+	}
+
+	let b = 0;
+	if (isGregorian){
+	let a = INT(year / 100.0);
+		b = 2 - a + INT(a / 4.0);
+	}
+
+	let jd=INT(365.25 * (year + 4716)) + INT(30.6001 * (month + 1)) + day + b - 1524.5;
+	jd+=hour/24.0;
+	jd+=min/24.0/60.0;
+	jd+=sec/24.0/60.0/60.0;
+	return jd;
+}	
+
+//From Meeus, CH7
+function julainDateToGregorian(jd){
+	let temp=jd+.5;
+	let Z=Math.trunc(temp);
+	let F=temp-Z;
+	let A=Z;
+	if(Z>=2299161){
+		let alpha=INT((Z-1867216.25)/36524.25);
+		A=Z+1+alpha-INT(alpha/4);
+	}
+	let B=A+1524;
+	let C=INT((B-122.1)/365.25);
+	let D=INT(365.25*C);
+	let E=INT((B-D)/30.6001);
+
+	let day=B-D-INT(30.6001*E)+F;
+	let month=E-1;
+	if(E>13){
+		month=E-13;
+	}
+	let year=C-4716;
+	if(month<3){
+		year=C-4715;
+	}
+
+	return [year,month,day,0,0,0];
+
+}
+
+function addYearsToSelect(year){
+    const s=document.getElementById("inputYear");
+
+    for(let i=0;i<200;i++){
+        const o=document.createElement('option');
+        o.value=1900+i;
+        o.innerText=1900+i;
+        s.appendChild(o);
+    }
+    s.selectedIndex=year-1900;
+}
+
+function compute(){
+    const s=document.getElementById("inputYear");
+    const year=s.selectedIndex+1900;
+    computePhases(year);
+}
+
+function computePhases(year){
+    let k=getCycleEstimate(year,0);
+    let text="";
+
+    for(let i=-1;i<14;i++){
+        let n=julainDateToGregorian(getPhaseDate(k+i,0));
+        let f=julainDateToGregorian(getPhaseDate(k+i,.25));
+        let h=julainDateToGregorian(getPhaseDate(k+i,.5));
+        let l=julainDateToGregorian(getPhaseDate(k+i,.75));
+
+        text+=format("New  ",n);
+        text+=format("First",f);
+        text+=format("Full ",h);
+        text+=format("Last ",l);
+    }
+
+    document.getElementById("output").innerText=text;
+}
+
+function format(s,d){
+    const day=zeropad(Math.trunc(d[2]));
+    let frac=d[2]%1;
+    const hour=zeropad(Math.trunc(frac*24));
+    frac=(frac*24)%1;
+    const min=zeropad(Math.trunc(frac*60));
+    frac=(frac*60)%1;
+    const sec=zeropad(Math.trunc(frac*60));
+
+    return s+" "+d[0]+" "+months[d[1]-1] +" "+day+" "+hour+":"+min+":"+sec    +"\r\n";
+}
+
+function zeropad(i){
+    temp=i;
+    if(i<10){
+        temp="0"+i;
+    }
+    return temp;
+}
+
+
+</script>
+</body>
+</html>
+

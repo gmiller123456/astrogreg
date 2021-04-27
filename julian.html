@@ -9,6 +9,27 @@
 <body onload="calculateAll();">
 <script src="highlight/highlight.pack.js"></script>
 <script>hljs.initHighlightingOnLoad();</script>
+<h1>Julian Date Algorithms</h1>
+
+These two functions below are short versions that work with the time elapsed in milliseconds since Jan 1, 1970 UTC.
+Most languages have routines to produce time in this way, so it may be preferable to the long routine below.  Since
+almost all libraries have issues dealing with dates before Oct 15, 1582, be very careful trying to modify these
+routines to work with dates before then.  If you have the time in seconds, rather than milliseconds, change
+86400000 to 86400.
+
+<pre>
+<code class="JavaScript" id='code1'> 
+function JulianDateFromUnixTime(t){
+	//Not valid for dates before Oct 15, 1582
+	return (t / 86400000) + 2440587.5;
+}
+
+function UnixTimeFromJulianDate(jd){
+	//Not valid for dates before Oct 15, 1582
+	return (jd-2440587.5)*86400000;
+}	
+</code>	
+</pre>
 
 JavaScript functions to convert to and from a Julian Date.  Algorithms from Astonomical Algorithms (Meeus).
 <div style='border-style: solid; border-width:1;'>
@@ -72,6 +93,9 @@ function calculate2(){
 function INT(d){
 	if(d>0){
 		return Math.floor(d);
+	}
+	if(d==Math.floor(d)){
+		return d;
 	}
 	return Math.floor(d)-1;
 }
@@ -137,6 +161,9 @@ function julainDateToGregorian(jd){
 function INT(d){
 	if(d>0){
 		return Math.floor(d);
+	}
+	if(d==Math.floor(d)){
+		return d;
 	}
 	return Math.floor(d)-1;
 }

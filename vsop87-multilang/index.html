@@ -1,3 +1,238 @@
-Project is hosted on GitHub: <a href="https://github.com/gmiller123456/vsop87-multilang">https://github.com/gmiller123456/vsop87-multilang</a><br>
+<html>
+    <head>
+        <title>VSOP87 Multilang</title>
+        <style>
+            .graphOption{
+                display:inline-block;
+                border: 1px;
+                border-style: solid;
+                vertical-align: top;
+            }
+        </style>
+    </head>
+<body>
+<script src="vsop87a_array.js"></script>
 
-<p>A <a href="example_alt_az_moon.html">JavaScript  Example</a> is available.
+<script>
+function getBody(bodyNum,et){
+    return vsop87a_array.getPlanet(bodyNum,et);
+}
+
+
+</script>
+<h1>VSOP87 Multilang</h1>
+
+<h2>What is VSOP87?</h2>
+<a href="https://en.wikipedia.org/wiki/VSOP_(planets)">VSOP87</a> was develped by the Bureau des Longitudes in Paris for computing the positions of
+the planets (Mercury through Neptune), and version "A" also includes the Earth-Moon barrycenter, which can provide the positon of the Moon.  The accuracy according
+to the authors is 1 arcseconds for a 2000 year period before and after the year 2000.  Several different versions are provided, VSOP87, VSOP87A, VSOP87B, VSOP87C, 
+VSOP87D, VSOP87E provide the coordinates in different formats and coordinate systems.  
+<p>
+For full details, consult <a href="http://articles.adsabs.harvard.edu/full/1988A%26A...202..309B">Planetary theories in rectangular and spherical variables - VSOP 87 solutions</a>
+    
+<h2>Project Overview</h2>
+The purpose of this project is to provide implementations of the VSOP87 theory in multiple languages at different levels of precision.  The source code files
+are hosted on GitHub: <a href="https://github.com/gmiller123456/vsop87-multilang">https://github.com/gmiller123456/vsop87-multilang</a>. An example 
+implementation to compute RA/DEC and ALT/AZ coordinates using Javascript <a href="example_alt_az_moon.html">JavaScript Example</a> is available.
+<h2>Accuracy</h2>
+Source code for all versions is provided at the Github repository above, but this page will focus mainly on VSOP87A,
+arguably the most useful for amateurs in general, since it can provide the position of the Moon.  Since the accuracy is far greater than that needed for most amateur
+applications, it can be useful to truncate the series to save computation time.  The implementation used on this page differs from that in the Github archive in that
+it is implemented using arrays and loops, as opposed to the unrolled loops used by the versions on Github.  The reason is that using arrays and loops make it easier
+use different accuracy levels and collect more statistics.  Even if your application will not be written in JavaScript this can still help you get an idea of how
+different version compare in percentage of computing speed and accuracy.
+<p>
+Below you can generate graphs to help you determine which level of precision is needed for your application.  The angles computed are all Geocentric.  Accuracy
+will vary depending on the body, smallest coefficient, and date range.  So use this form to test which parameters give the accuracy your applicaiton needs.
+
+<form>
+    <div class="graphOption">
+        <table>
+            <tr><td colspan=3>Bodies</td></tr>
+            <tr><td><input type=checkbox id='checkSun' checked>Sun</td><td><input type=checkbox id='checkMercury' checked>Mercury</td><td><input type=checkbox id='checkVenus' checked>Venus</td></tr>
+            <tr><td><input type=checkbox id='checkMars' checked>Mars</td><td><input type=checkbox id='checkJupiter' checked>Jupiter</td><td><input type=checkbox id='checkSaturn' checked>Saturn</td></tr>
+            <tr><td><input type=checkbox id='checkUranus' checked>Uranus</td><td><input type=checkbox id='checkNeptune' checked>Neptune</td><td><input type=checkbox id='checkMoon' checked>Moon</td></tr>
+        </table>    
+    </div>
+    <div class="graphOption">
+        <table>
+            <tr><td colspan=3>Series' Smallest Coefficients</td></tr>
+            <tr><td><input type=checkbox id='checkFull' checked>Full</td><td><input type=checkbox id='check10' >0.0000000001</td><td><input type=checkbox id='check9' >0.000000001</td></tr>
+            <tr><td><input type=checkbox id='check8' >0.00000001</td><td><input type=checkbox id='check7' >0.0000001</td><td><input type=checkbox id='check6' >0.000001</td></tr>
+            <tr><td><input type=checkbox id='check5' checked>0.00001</td><td><input type=checkbox id='check4' >0.0001</td><td><input type=checkbox id='check3' >0.001</td></tr>
+        </table>    
+    </div>
+    <div class="graphOption">
+        <table>
+            <tr><td colspan=3>Date Range</td></tr>
+            <tr><td>Start Year:</td><td><input type=text id='startYear' size=4 value="1950"></td></tr>
+            <tr><td>End Year:</td><td><input type=text id='endYear' size=4 value="2050"></td></tr>
+        </table>    
+    </div>
+    <div class="graphOption">
+        <table>
+            <tr><td colspan=3>Distribution</td></tr>
+            <tr><td><input type=radio id='interValType' value="random" checked>Random</td></tr>
+            <tr><td><input type=radio id='interValType' value="fixed">Uniform</td></tr>
+            <tr><td><input type=text id='numIntervals' size=4 value="1">Intervals per Day</td></tr>
+        </table>    
+    </div>
+    <div class="graphOption">
+        <input type=button value="Run Tests" onclick="runTests();">
+    </div>
+</form>
+
+<script>
+let results;
+
+function runTests(){
+    initResults();
+    const startYear=document.getElementById("startYear").value;
+    const endYear=document.getElementById("endYear").value;
+
+    const startjd=Helper.gregorianDateToJulianDate(startYear,1,1,0,0,0);
+    const endjd=Helper.gregorianDateToJulianDate(endYear,1,1,0,0,0);
+
+    const bodiesToTest=getTestBodies();
+    const seriesToTest=getTestSeries();
+
+    uniformDistributionTest(bodiesToTest,seriesToTest,startjd,endjd);
+    console.log(results);
+}
+
+function initResults(){
+    results=new Array();
+    for(let i=0;i<20;i++){
+        results[i]=new Array();
+        for(let j=0;j<10;j++){
+            results[i][j]=new Array();
+        }
+    }
+}
+
+function getTestSeries(){
+    let a=new Array();
+
+    a[0]=document.getElementById("checkFull").checked;
+    a[1]=document.getElementById("check10").checked;
+    a[2]=document.getElementById("check9").checked;
+    a[3]=document.getElementById("check8").checked;
+    a[4]=document.getElementById("check7").checked;
+    a[5]=document.getElementById("check6").checked;
+    a[6]=document.getElementById("check5").checked;
+    a[7]=document.getElementById("check4").checked;
+    a[8]=document.getElementById("check3").checked;
+
+    return a;
+}
+
+function getTestBodies(){
+    let a=new Array();
+    a[0]=document.getElementById("checkSun").checked;
+    a[1]=document.getElementById("checkMercury").checked;
+    a[2]=document.getElementById("checkVenus").checked;
+    a[3]=document.getElementById("checkMars").checked;
+    a[4]=document.getElementById("checkJupiter").checked;
+    a[5]=document.getElementById("checkSaturn").checked;
+    a[6]=document.getElementById("checkUranus").checked;
+    a[7]=document.getElementById("checkNeptune").checked;
+    a[8]=document.getElementById("checkMoon").checked;
+
+    return a;
+}
+
+function uniformDistributionTest(bodiesToTest,seriesToTest,start,end){
+    let current=start;
+    while(current<=end){
+        runTestsForJD(bodiesToTest,seriesToTest,current);
+        current+=1;
+        //console.log( (current-start)/(end-start) );
+    }
+}
+
+function getLimitForSeries(series){
+    if(series==0){return 0;}
+
+    const exp=(11-series);
+    return 1.0/Math.pow(10,exp);
+
+}
+
+function runTestsForJD(bodiesToTest,seriesToTest,jd){
+
+    for(let i=0;i<seriesToTest.length;i++){
+        if(seriesToTest[i]==true){
+            let limit=getLimitForSeries(i);
+            const t=Helper.convertJDToJulianMilleniaSinceJ2000(jd);
+            const earth=vsop87a_array.getPlanet(3,t,limit);
+            results[i][3][results[i][3].length]=earth;
+            results[i][9][results[i][9].length]=t;
+            
+            for(let j=0;j<bodiesToTest.length;j++){
+                if(bodiesToTest[j]==true) {
+                    let r;
+                    let body=j;
+                    if(j==0){
+                        r=[0,0,0];
+                    } else {
+                        if(j>=3){
+                            body+=1;
+                        }
+                        r=vsop87a_array.getPlanet(body,t,limit);
+                    }
+                    results[i][j][results[i][j].length]=r;
+                }
+                //const geocentric=[r[0]-earth[0],r[1]-earth[1],r[2]-earth[2]];
+                //console.log(geocentric);
+            }
+        }
+    }
+}
+
+function runTestsForLimt(bodiesToTest,jd,limit){
+}
+
+class Helper{
+    static convertJDToJulianMilleniaSinceJ2000(jd){
+            return (jd - 2451545.0) / 365250.0;
+    }
+
+
+    //Special "Math.floor()" function used by dateToJulianDate()
+    static INT(d){
+        if(d>0){
+            return Math.floor(d);
+        }
+        return Math.floor(d)-1;
+    }
+
+    static gregorianDateToJulianDate(year, month, day, hour, min, sec){
+        let isGregorian=true;
+        if(year<1582 || (year == 1582 && (month < 10 || (month==10 && day < 5)))){
+            isGregorian=false;
+        }
+
+        if (month < 3){
+            year = year - 1;
+            month = month + 12;
+        }
+
+        let b = 0;
+        if (isGregorian){
+        let a = this.INT(year / 100.0);
+            b = 2 - a + this.INT(a / 4.0);
+        }
+
+        let jd=this.INT(365.25 * (year + 4716)) + this.INT(30.6001 * (month + 1)) + day + b - 1524.5;
+        jd+=hour/24.0;
+        jd+=min/24.0/60.0;
+        jd+=sec/24.0/60.0/60.0;
+        return jd;
+    }
+}
+
+</script>
+
+</body>
+</html>
+

@@ -1,0 +1,83 @@
+<html><head>
+
+</head>
+<body>
+<script src="vsop87a_array.js"></script>
+<script src="vsop87a_full.js"></script>
+
+
+<script>
+runRandomTests();
+
+function runRandomTests(){
+    for(let i=0;i<1000;i++){
+        let body=Math.floor(Math.random()*9)+1;
+        let t=Math.random()*2-1;
+        testCase(body,t);
+        if(i%100==0){console.log(i);}
+    }
+    console.log("done");
+}
+
+function testCase(body,t){
+    const a=getBody1(body,t);
+    const b=getBody2(body,t);
+    const e1=Math.abs(a[0]-b[0]);
+    const e2=Math.abs(a[1]-b[1]);
+    const e3=Math.abs(a[2]-b[2]);
+
+    const tollerance=1e-17;
+    
+
+    if(e1>tollerance || e2>tollerance || e3>tollerance){
+        console.log("Error",body,t);
+        console.log(a);
+        console.log(b);
+    } else {
+        //console.log("OK",body,t);
+    }
+}
+
+function getBody2(bodyNum,et){
+    return vsop87a_array.getPlanet(bodyNum,et);
+}
+
+function getBody1(bodyNum,et){
+    switch(bodyNum){
+        case 0: 
+            return [0,0,0]; //Sun is at the center for vsop87a
+            //return vsop87e_full.getSun(et);  // "E" is the only version the Sun is not always at [0,0,0]
+        case 1:
+            return vsop87a_full.getMercury(et);
+        case 2:
+            return vsop87a_full.getVenus(et);
+        case 3:
+            return vsop87a_full.getEarth(et);
+        case 4:
+            return vsop87a_full.getMars(et);
+        case 5:
+            return vsop87a_full.getJupiter(et);
+        case 6:
+            return vsop87a_full.getSaturn(et);
+        case 7:
+            return vsop87a_full.getUranus(et);
+        case 8:
+            return vsop87a_full.getNeptune(et);
+        case 9:
+            //return [0,0,0]; //Vsop87a is the only version which can compute the moon
+            return vsop87a_full.getEmb(et);
+        case 10:
+            //return [0,0,0]; //Vsop87a is the only version which can compute the moon
+            return vsop87a_full.getMoon(vsop87a_full.getEarth(et), vsop87a_full.getEmb(et));
+    }
+}
+
+
+
+</script>
+Project is hosted on GitHub: <a href="https://github.com/gmiller123456/vsop87-multilang">https://github.com/gmiller123456/vsop87-multilang</a><br>
+
+<p>A <a href="example_alt_az_moon.html">JavaScript  Example</a> is available.
+</body>
+</html>
+
