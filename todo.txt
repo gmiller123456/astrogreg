@@ -1,44 +1,52 @@
-Moon Illumination and Age
-Day of week calculation
-Equation of time
-Refraction
+
+Articles
 Projection modes
-Lat/Lon to geocentric XYZ
-Change from polar to/from rectangular coordinates
-Geocentrix xyz of observer on Earth's surface
-Bias matrix
-Common sources of inaccuracies
-
-Various Nutation algorithms
-Precession algorithms
-Obliquity
-Earth Rotation Angle and GMST
-
-Planet data
-Meteor shower list
 Satellite positions
-Planet rise and set graphs
-Accurate Moon rise and set algorithm
-Vector Matrix algorithms
 Solar eclipses with Besselian elements
 Solar eclipses, brute force
 Making Besselian elements
-Lunar eclipses
-ISS Lunar and solar transits
-Jupiter's moons
 Reduction walkthrough at various stages
-Coordinate systems
-Simple planetarium
-Simple star charts
-Keplers equation
-Comet location
 Orbit determination
 Methods of drawing stars
-Constellation lines
-Simplified star database
-Star magnitude to intensity equation
-B-V to RGB conversion
-Saturns Rings
-Horizons CGI request builder
-Common star names (K:\StarCatalogs\Hipparcos and Tycho\cdroms\tables\ident6.doc)
+Keplers equation
+Coordinate systems
+Lunar eclipses
+Common sources of inaccuracies
+Accurate Moon rise and set algorithm
 
+Snippets
+Moon Illumination and Age
+Equation of time
+Refraction
+Planet data
+Meteor shower list
+Simplified star database
+Common star names (K:\StarCatalogs\Hipparcos and Tycho\cdroms\tables\ident6.doc)
+B-V to RGB conversion
+Star magnitude to intensity equation
+Constellation lines
+Various Nutation algorithms
+-Precession algorithms
+-Obliquity
+-Earth Rotation Angle and GMST
+-Bias matrix
+-abberation
+-Gravitaional deflection
+-tt to tdb
+Change from polar to/from rectangular coordinates
+Geocentrix xyz of observer on Earth's surface
+Convert decimal hours/degrees to pretty format
+
+Apps
+Vector Matrix algorithms
+Saturns Rings
+Comet location
+ISS Lunar and solar transits
+Jupiter's moons
+Rise Set tables
+Rise and set graph
+Horizons CGI request builder
+Simple planetarium
+Simple star charts
+
+Reading List and web resources

@@ -1,5 +1,6 @@
 <html></html>
 <head>
+    <link rel="stylesheet" href="default.css">
     <title>Celestial Programming: Moon Phases</title>
 </head>    
 <body>
@@ -9,7 +10,7 @@
     is available.  The value returned from that truly is an estimate, so the user should compute phases for cycles both before and after the cycle returned.  In one of the examples
     in the book, Meeus uses the middle of the month as an estimate, and it might appear this is a sufficient method of getting all of the phases in a month, but it is not.  Months
     are longer than lunation cycles, and if you always use the middle of the month as a starting estimate, you will eventually skip a lunation cycle.  This page serves as an example
-    of how to compute phases for an entire year, but the main algorith is the getPhaseDate() function.
+    of how to compute phases for an entire year, but the main algorithm is the getPhaseDate() function.
     <p></p>
     <form>
         Year <select name="inputYear" id="inputYear" onchange="compute()"></select>

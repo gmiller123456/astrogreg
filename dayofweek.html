@@ -1,0 +1,84 @@
+<html>
+    <head></head>
+<title>Celestial Programming: Day of Week Calculation</title>
+    <link rel="stylesheet" href="default.css">
+    <link rel="stylesheet" href="highlight/styles/default.css">
+    <style>
+        #output{
+            font-weight: bold;
+        }
+    </style>
+</head>    
+<body>
+    <h1>Celestial Programming: Day of Week Calculation</h1>
+This is an example implementation of Zeller's Congruence.  It computes the day of the week a given date falls on.  It is
+useful for dynamically generating calendars.
+<p></p>
+<form>
+    <input type="date" onchange="compute()" id="inputDate" value="2021-01-27">
+</form>
+<div id="output"></div>
+<pre id="sourceOutput">
+    <code class="JavaScript" id='code1'></code>    
+</pre>
+    
+
+<script id="sourceCode">
+/*
+Implementation of Zeller's Congruence to compute the day of the week for a given date.
+Greg Miller (gmiller@gregmiller.net) 2021
+Released as public domain
+www.celestialprogramming.com
+
+year - the year
+month - month, January = 1
+day - day of month
+
+returned 0=Saturday, 1=Sunday ... 6=Friday
+*/
+
+const days=["Sat","Sun","Mon","Tue","Wed","Thu","Fri"];
+
+function getDayOfWeek(year,month,day){
+    let m=month-0;
+    year=year-0;
+    if(m<3){
+        m=12+m;
+        year--;
+    }
+
+    const y=Math.round(((year/100)%1)*100);
+    const c=Math.floor(year/100);
+    const d=day-0;
+
+    w=Math.floor((Math.floor(13*(m+1)/5)+Math.floor(y/4)+Math.floor(c/4)+d+y-2*c)%7);
+    return w;
+}
+
+</script>
+<script>
+compute();
+
+function compute(){
+    const e=document.getElementById("inputDate");
+    const v=e.value;
+    const a=v.split("-");
+    console.log(a);
+    const d=getDayOfWeek(a[0],a[1],a[2]);
+    document.getElementById("output").innerText=days[d];
+}
+
+
+</script>
+<script>
+    let t=document.getElementById("sourceCode").innerText;
+    t=t.replaceAll("<","&lt;")
+    t=t.replaceAll(">","&gt;")
+    document.getElementById("code1").innerHTML=t;
+    
+    </script>
+    <script src="highlight/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+    
+</body>
+</html>
