@@ -1,5 +1,5 @@
 
-Articles
+Tutorials
 Projection modes
 Satellite positions
 Solar eclipses with Besselian elements
@@ -36,6 +36,7 @@ Various Nutation algorithms
 Change from polar to/from rectangular coordinates
 Geocentrix xyz of observer on Earth's surface
 Convert decimal hours/degrees to pretty format
+Approx alt-az
 
 Apps
 Vector Matrix algorithms
@@ -48,5 +49,6 @@ Rise and set graph
 Horizons CGI request builder
 Simple planetarium
 Simple star charts
+Venus at sunset/sunrise chart. https://www.nakedeyeplanets.com/venus-eve-2014-15.htm
 
 Reading List and web resources

@@ -1,0 +1,142 @@
+<html>
+<head>
+<title>Convert RA/DEC to Alt/Az</title>
+<link rel="stylesheet" href="default.css">
+<link rel="stylesheet" href="highlight/styles/default.css">
+<style>
+body{}
+</style>
+</head>    
+<body>
+<h1>Convert RA/DEC to Alt/Az</h1>
+Converts a RA/DEC (J2000) coordinate to approximate Alt/Az (J2000) coordinate.
+
+<form>
+    <table>
+        <tr><td align=right>Julian Date:</td><td><input type=text id="jd" value="2459349.210248739"></td><td><input type=button value="Now" onclick='setJDToNow();'></td></tr>
+        <tr><td align=right>Lattitude:</td><td><input type=text id="lat" value="38.2464000"></td><td><input type=button value="Get Location" onclick='getUserPosition();'><td></tr>
+        <tr><td align=right>Longitude:</td><td><input type=text id="lon" value=274.236400></td></tr>
+        <tr><td align=right>Right Ascension:</td><td><input type=text id="ra" value="3.4299545354"></td><td>Decimal hours, eg. 10.382938</td></tr>
+        <tr><td align=right>Declination:</td><td><input type=text id="dec" value="18.726708585"></td><td>Decimal degrees, eg. 249.382988</td></tr>
+        <tr><td></td><td><input type=button value="Compute" onclick="compute();"></td></tr>
+    </table>
+</form>
+
+<pre id="output"></pre>
+
+<pre id="sourceOutput">
+<code class="JavaScript" id='code1'></code>    
+</pre>
+<script id='sourceCode'>
+//Greg Miller (gmiller@gregmiller.net) 2021
+//Released as public domain
+//http://www.celestialprogramming.com/
+
+//All input and output angles are in radians, jd is Julian Date in UTC
+function raDecToAltAz(ra,dec,lat,lon,jd_ut){
+    //based on Explanatory supplement eq 7.16
+    const gmst=greenwichMeanSiderealTime(jd_ut);
+    const localSiderealTime=gmst+lon;
+        
+    const H=localSiderealTime - ra;
+
+    const a=Math.asin(Math.sin(dec)*Math.sin(lat)+Math.cos(dec)*Math.cos(H)*Math.cos(lat));
+    const az=Math.asin( (-(Math.cos(dec)*Math.sin(H)))/Math.cos(a)  );
+    return [Math.PI-az,a];
+}
+
+function greenwichMeanSiderealTime(jd_ut){
+    //"The New Defintion of Universal Time" S. Aoki et al --- Equations 13 and 19
+    //http://adsabs.harvard.edu/full/1982A%26A...105..359A
+    const du=Math.floor(jd_ut-2451545)-.5;
+    const frac=(jd_ut-2451545-du)*60*60*24;
+    const tu=du/36525.0;
+
+    let gmst=24110.54841 + 8640184.812866*tu + 0.093104*tu*tu - 6.210e-6*tu*tu*tu; //eq 13
+    gmst+=frac * 1.002737909350795; //eq 19 simplified
+
+    gmst=(gmst/60/60*15*Math.PI/180.0)%(2.0*Math.PI);
+    if(gmst<0){gmst+=2*Math.PI;}
+
+    return gmst;
+}
+</script>
+<script>
+compute();
+
+function compute(){
+    const toRad=Math.PI/180;
+
+    const jd=document.getElementById("jd").value
+    
+    //Convert all values to radians
+    const lat=document.getElementById("lat").value*toRad;
+    const lon=document.getElementById("lon").value*toRad;
+    const ra=document.getElementById("ra").value*toRad*15; //Convert RA from hours to degrees, then to radians
+    const dec=document.getElementById("dec").value*toRad;
+
+    const altaz=raDecToAltAz(ra,dec,lat,lon,jd);
+
+    const r="Alt:"+degreesToDMS(altaz[1]/toRad)+"<br>Az: "+degreesToDMS(altaz[0]/toRad);
+    document.getElementById("output").innerHTML=r;
+}
+
+function getUserPosition(){
+	navigator.geolocation.getCurrentPosition(showPosition);
+}
+
+function showPosition(p){
+
+	document.getElementById("lat").value=p.coords.latitude;
+	document.getElementById("lon").value=-p.coords.longitude;
+}
+
+function JulianDateFromUnixTime(t){
+	//Not valid for dates before Oct 15, 1582
+	return (t / 86400000) + 2440587.5;
+}
+
+function UnixTimeFromJulianDate(jd){
+	//Not valid for dates before Oct 15, 1582
+	return (jd-2440587.5)*86400000;
+}
+
+function setJDToNow(){
+	const date=new Date();
+	const jd=JulianDateFromUnixTime(date.getTime());
+	document.getElementById("jd").value=jd;
+}
+
+function degreesToDMS(d){
+    let sign="+";
+    if(d<0){sign="-";}
+    d=Math.abs(d);
+    let deg=Math.floor(d);
+    d-=deg;
+    d*=60;
+    let min=Math.floor(d);
+    d-=min;
+    d*=60;
+    let sec=d.toFixed(2);
+
+    if(deg<100){deg="0"+deg;}
+    if(deg<10){deg="0"+deg;}
+    if(min<10){min="0"+min;}
+    if(sec<10){sec="0"+sec;}
+
+    return sign+deg+"&#176; "+min+"' "+sec+"\"";
+}
+
+</script>
+
+<script>
+let t=document.getElementById("sourceCode").innerText;
+t=t.replaceAll("<","&lt;")
+t=t.replaceAll(">","&gt;")
+t=t.replaceAll("&","&amp;")
+document.getElementById("code1").innerHTML=t;
+
+</script>
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+    

@@ -1,0 +1,157 @@
+<html>
+<head>
+<title>Convert Decimal Degrees/Hours to Components</title>
+<link rel="stylesheet" href="default.css">
+<link rel="stylesheet" href="highlight/styles/default.css">
+<style>
+body{}
+</style>
+</head>    
+<body>
+<h1>Convert Decimal Degrees/Hours to Components</h1>
+<ul>
+<li>1 Hour = 15 degrees.</li>
+<li>1 Minute = 15 arcminutes.</li>
+<li>1 Second = 15 arcseconds.</li>
+<li>Hours can be positive or negative, but always have two digits for the hour.</li>
+<li>Degrees for verticals are usually from -90 to +90, and will have a +/- sign and two digits for the degree</li>
+<li>Degrees for horizontals usually from 0 to 360, will not be negative, will not have a +/- sign, and have three digits for the degrees.</li>
+<li>Longitude is the exception having values from -180 to +180, requiring 4 places for the degree position.</li>
+<li>Hour components are hours, minutes, and seconds, and always designated as h, m, s.  E.g. +03h 25m 47.84s.</li>
+<li>Degree componets are degrees, arcminutes, and arcseconds, and always designated as &#176;, ', ". E.g. +18&#176; 43' 36.15"</li>
+</ul>
+
+<p>It is common practice to refer to arcminutes as minutes, and arcseconds as seconds, and the reader must infer the meaning from the
+context.  This may seem absurd and confusing.  But the use of minutes and seconds to refer to subdivisions of degrees likely predated
+their use in time keeping.  "Minute" comes from "minute division" (pronounced like "my newt"), and "second" from "2nd division".  It is
+my recommendation that you always refer to arcminutes and arcseconds using their full or abbreviated (arcmin, arcsec) terms, unless
+depecting them with their symbols (' and ") as part of a full degree readout (e.g 274&#176 14' 11.04").  Referring to them using ' and "
+by themselves can possibly confuse the reader as those symbols are also used for feet and inches.
+</p>
+<form>
+    <table>
+        <tr><td align=right>Right Ascension:</td><td><input type=text id="ra" value="3.4299545354"></td><td>Decimal hours, eg. 10.382938</td></tr>
+        <tr><td align=right>Declination:</td><td><input type=text id="dec" value="18.726708585"></td><td>Decimal degrees, eg. 32.38288</td></tr>
+        <tr><td align=right>Longitude:</td><td><input type=text id="lon" value="274.236400"></td><td>Decimal degrees, eg. 249.382988</td></tr>
+        <tr><td align=right>Longitude 2:</td><td><input type=text id="lon2" value="-85.7636"></td><td>Decimal degrees, eg. -85.7636</td></tr>
+        <tr><td></td><td><input type=button value="Compute" onclick="compute();"></td></tr>
+    </table>
+</form>
+
+<pre id="output"></pre>
+
+<pre id="sourceOutput">
+<code class="JavaScript" id='code1'></code>    
+</pre>
+<script id='sourceCode'>
+//Greg Miller (gmiller@gregmiller.net) 2021
+//Released as public domain
+//http://www.celestialprogramming.com/
+
+function degreesTo3DigitDMS(d){
+    d=Math.abs(d);
+    let deg=Math.floor(d);
+    d-=deg;
+    d*=60;
+    let min=Math.floor(d);
+    d-=min;
+    d*=60;
+    let sec=d.toFixed(2);
+
+    if(deg<100){deg="0"+deg;}
+    if(deg<10){deg="0"+deg;}
+    if(min<10){min="0"+min;}
+    if(sec<10){sec="0"+sec;}
+
+    return deg+"&#176; "+min+"' "+sec+"\"";
+}
+
+function degreesTo4PlaceDMS(d){
+    let sign="+";
+    if(d<0){sign="-";}
+    d=Math.abs(d);
+    let deg=Math.floor(d);
+    d-=deg;
+    d*=60;
+    let min=Math.floor(d);
+    d-=min;
+    d*=60;
+    let sec=d.toFixed(2);
+
+    if(deg<100){deg="0"+deg;}
+    if(deg<10){deg="0"+deg;}
+    if(min<10){min="0"+min;}
+    if(sec<10){sec="0"+sec;}
+
+    return sign+deg+"&#176; "+min+"' "+sec+"\"";
+}
+
+function degreesTo2DigitDMS(d){
+    let sign="+";
+    if(d<0){sign="-";}
+    d=Math.abs(d);
+    let deg=Math.floor(d);
+    d-=deg;
+    d*=60;
+    let min=Math.floor(d);
+    d-=min;
+    d*=60;
+    let sec=d.toFixed(2);
+
+    if(deg<10){deg="0"+deg;}
+    if(min<10){min="0"+min;}
+    if(sec<10){sec="0"+sec;}
+
+    return sign+deg+"&#176; "+min+"' "+sec+"\"";
+}
+
+function hoursToHMS(d){
+    let sign="+";
+    if(d<0){sign="-";}
+    d=Math.abs(d);
+    let deg=Math.floor(d);
+    d-=deg;
+    d*=60;
+    let min=Math.floor(d);
+    d-=min;
+    d*=60;
+    let sec=d.toFixed(2);
+
+    if(deg<10){deg="0"+deg;}
+    if(min<10){min="0"+min;}
+    if(sec<10){sec="0"+sec;}
+
+    return sign+deg+"h "+min+"m "+sec+"s";
+}
+</script>
+<script>
+compute();
+
+function compute(){
+    const toRad=Math.PI/180;
+
+    const ra=document.getElementById("ra").value; 
+    const dec=document.getElementById("dec").value;
+    const lon=document.getElementById("lon").value;
+    const lon2=document.getElementById("lon2").value;
+
+    let r="RA:  "+hoursToHMS(ra);
+    r+="<br>DEC: "+degreesTo2DigitDMS(dec);
+    r+="<br>Lon: "+degreesTo3DigitDMS(lon);
+    r+="<br>Lon:"+degreesTo4PlaceDMS(lon2);
+    document.getElementById("output").innerHTML=r;
+}
+
+</script>
+<script>
+let t=document.getElementById("sourceCode").innerText;
+t=t.replaceAll("<","&lt;")
+t=t.replaceAll(">","&gt;")
+t=t.replaceAll("&","&amp;")
+document.getElementById("code1").innerHTML=t;
+
+</script>
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+</body>
+</html>
