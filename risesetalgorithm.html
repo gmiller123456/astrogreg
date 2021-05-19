@@ -47,12 +47,14 @@ const toDeg=180.0/Math.PI;
 
 //Corrects values to make them between 0 and 1
 function constrain(v){
-	if(v<0){return v+1;}
-	if(v>1){return v-1;}
-	return v;
+        console.log(v);
+        while(v<0){v+=1;}
+        while(v>1){v-=1;}
+        return v;
 }
 
 //All angles must be in radians
+//Remember Meeus considers West longitudes as positive, the opposite of how everyone else does.
 //Outputs are times in hours GMT (not accounting for daylight saving time)
 //From Meeus Page 101
 function getRiseSet(jd,lat,lon,ra,dec){

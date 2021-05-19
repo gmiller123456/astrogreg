@@ -1,16 +1,55 @@
+<!DOCTYPE html>
 <html>
 <head>
 <title>Convert RA/DEC to Alt/Az</title>
 <link rel="stylesheet" href="default.css">
 <link rel="stylesheet" href="highlight/styles/default.css">
 <style>
-body{}
+    .algorithmdiv{
+        border: solid;
+        display: inline-block;
+        padding: 10px;
+        margin: 10px;
+    }
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/katex.min.css" integrity="sha384-Um5gpz1odJg5Z4HAmzPtgZKdTBHZdw8S29IecapCSB31ligYPhHQZMIlWLYQGVoc" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/katex.min.js" integrity="sha384-YNHdsYkH6gMx9y3mRkmcJ2mFUjTd0qNQQvY9VYZgQd7DcN7env35GzlmFaZ23JGp" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/contrib/auto-render.min.js" integrity="sha384-vZTG03m+2yp6N6BNi5iM4rW4oIwk5DfcNdFfxkk9ZWpDriOkXX8voJBFrAO7MpVl" crossorigin="anonymous"
+    onload="renderMathInElement(document.body);"></script>
 </head>    
 <body>
 <h1>Convert RA/DEC to Alt/Az</h1>
-Converts a RA/DEC (J2000) coordinate to approximate Alt/Az (J2000) coordinate.
-
+<p>Converts a RA/DEC (J2000) coordinate to approximate Alt/Az (J2000) coordinate.  This uses Greenwich <b>Mean</b> Sidereal Time to compute the approximate horizon coordiates, if you need
+the coordiates also corrected for nutation, you will need to modify this to use Greenwhich <b>Apparent</b> Sidereal Time.  It is assumed that all corrections the user has
+interest in have already been applied to the RA/Dec coordinates.</p>
+<p>You will likely come across two different sets of equations for the RA/Dec to Alt/Az conversion.  One set like those from the Explanatory
+    Supplement, and another set like those from Astronomical Algorithms.  The Explanatory Supplement set is derived from spherical trigonometry
+    while the other is a more direct approach.  The Astronomical Algorithms version will generally be easier to implement using the atan2 function
+    which performs the quadrant checks for you.  This implementation uses the Astronomical Algorithms set, but an implementation of the other
+    is available in the set of <a href="radec_to_altaz_testtdata.html">test data</a> which validates both sets of equations, and can be used as an example of how to implement the Explanatory
+    Supplement style.
+</p>
+<p>I have altered the algorithm from the method it is described in the book.  I have converted it so that Longitudes to the West are negative (like GPS
+    coordinates), and so that 0 Azimuth is North (like a compass).  I believe these changes make it behave more like a user would expect.
+</p>
+<span class="algorithmdiv">
+    <b>Explanatory Supplement eq 7.16</b><br>
+    <br>
+\(
+\cos \mathit{a} \sin A_{z} = -\cos \delta \sin \mathit{h}
+\\
+\cos \mathit{a} \cos A_{z} = \sin \delta \cos \phi - \cos \delta \cos \mathit{h} \sin \phi
+\\
+\sin \mathit{a} = \sin \delta \sin \phi + \cos \delta \cos \mathit{h} \cos \phi
+\)
+</span><span class="algorithmdiv">
+    <b>Astronomical Algorithms eq 13.5, 13.6</b><br>
+    <br>
+\(
+\tan A = \frac{\sin H}{\cos H \sin \varphi  - \tan \delta \cos \varphi} \\
+\sin h = \sin \varphi \sin \delta + \cos \varphi \cos \delta \cos H
+\)
+</span>
 <form>
     <table>
         <tr><td align=right>Julian Date:</td><td><input type=text id="jd" value="2459349.210248739"></td><td><input type=button value="Now" onclick='setJDToNow();'></td></tr>
@@ -34,31 +73,46 @@ Converts a RA/DEC (J2000) coordinate to approximate Alt/Az (J2000) coordinate.
 
 //All input and output angles are in radians, jd is Julian Date in UTC
 function raDecToAltAz(ra,dec,lat,lon,jd_ut){
-    //based on Explanatory supplement eq 7.16
+    //Meeus 13.5 and 13.6, modified so West longitudes are negative and 0 is North
     const gmst=greenwichMeanSiderealTime(jd_ut);
-    const localSiderealTime=gmst+lon;
+    let localSiderealTime=(gmst+lon)%(2*Math.PI);
+    
         
-    const H=localSiderealTime - ra;
+    let H=(localSiderealTime - ra);
+    if(H<0){H+=2*Math.PI;}
+    if(H>Math.PI){H=H-2*Math.PI;}
 
-    const a=Math.asin(Math.sin(dec)*Math.sin(lat)+Math.cos(dec)*Math.cos(H)*Math.cos(lat));
-    const az=Math.asin( (-(Math.cos(dec)*Math.sin(H)))/Math.cos(a)  );
-    return [Math.PI-az,a];
+    let az = (Math.atan2(Math.sin(H), Math.cos(H)*Math.sin(lat) - Math.tan(dec)*Math.cos(lat)));
+    let a = (Math.asin(Math.sin(lat)*Math.sin(dec) + Math.cos(lat)*Math.cos(dec)*Math.cos(H)));
+    az-=Math.PI;
+
+    if(az<0){az+=2*Math.PI;}
+    return [az,a, localSiderealTime,H];
 }
+    
+function greenwichMeanSiderealTime(jd){
+    //"Expressions for IAU 2000 precession quantities" N. Capitaine1,P.T.Wallace2, and J. Chapront
+    const t = ((jd - 2451545.0)) / 36525.0;
 
-function greenwichMeanSiderealTime(jd_ut){
-    //"The New Defintion of Universal Time" S. Aoki et al --- Equations 13 and 19
-    //http://adsabs.harvard.edu/full/1982A%26A...105..359A
-    const du=Math.floor(jd_ut-2451545)-.5;
-    const frac=(jd_ut-2451545-du)*60*60*24;
-    const tu=du/36525.0;
-
-    let gmst=24110.54841 + 8640184.812866*tu + 0.093104*tu*tu - 6.210e-6*tu*tu*tu; //eq 13
-    gmst+=frac * 1.002737909350795; //eq 19 simplified
-
-    gmst=(gmst/60/60*15*Math.PI/180.0)%(2.0*Math.PI);
-    if(gmst<0){gmst+=2*Math.PI;}
+    let gmst=this.earthRotationAngle(jd)+(0.014506 + 4612.156534*t + 1.3915817*t*t - 0.00000044 *t*t*t - 0.000029956*t*t*t*t - 0.0000000368*t*t*t*t*t)/60.0/60.0*Math.PI/180.0;  //eq 42
+    gmst%=2*Math.PI;
+    if(gmst<0) gmst+=2*Math.PI;
 
     return gmst;
+}
+
+function earthRotationAngle(jd){
+    //IERS Technical Note No. 32
+
+    const t = jd- 2451545.0;
+    const f = jd%1.0;
+
+    let theta = 2*Math.PI * (f + 0.7790572732640 + 0.00273781191135448 * t); //eq 14
+    theta%=2*Math.PI;
+    if(theta<0)theta+=2*Math.PI;
+
+    return theta;
+
 }
 </script>
 <script>
@@ -78,7 +132,7 @@ function compute(){
     const altaz=raDecToAltAz(ra,dec,lat,lon,jd);
 
     const r="Alt:"+degreesToDMS(altaz[1]/toRad)+"<br>Az: "+degreesToDMS(altaz[0]/toRad);
-    document.getElementById("output").innerHTML=r;
+    document.getElementById("output").innerHTML="Result:\r\n"+r;
 }
 
 function getUserPosition(){
@@ -131,9 +185,9 @@ function degreesToDMS(d){
 
 <script>
 let t=document.getElementById("sourceCode").innerText;
+t=t.replaceAll("&","&amp;")
 t=t.replaceAll("<","&lt;")
 t=t.replaceAll(">","&gt;")
-t=t.replaceAll("&","&amp;")
 document.getElementById("code1").innerHTML=t;
 
 </script>
