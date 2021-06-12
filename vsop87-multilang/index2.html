@@ -1,0 +1,43 @@
+<html>
+    <head>
+        <title>VSOP87 Multilang</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style>
+            .graphOption{
+                display:inline-block;
+                border: 1px;
+                border-style: solid;
+                vertical-align: top;
+            }
+        </style>
+    </head>
+<body>
+<script src="vsop87a_array.js"></script>
+
+<script>
+function getBody(bodyNum,et){
+    return vsop87a_array.getPlanet(bodyNum,et);
+}
+
+
+</script>
+<h1>VSOP87 Multilang</h1>
+
+<h2>What is VSOP87?</h2>
+<a href="https://en.wikipedia.org/wiki/VSOP_(planets)">VSOP87</a> was develped by the Bureau des Longitudes in Paris for computing the positions of
+the planets (Mercury through Neptune), and version "A" also includes the Earth-Moon barrycenter, which can provide the positon of the Moon.  The accuracy according
+to the authors is 1 arcseconds for a 2000 year period before and after the year 2000.  Several different versions are provided, VSOP87, VSOP87A, VSOP87B, VSOP87C, 
+VSOP87D, VSOP87E provide the coordinates in different formats and coordinate systems.  
+<p>
+For full details, consult <a href="http://articles.adsabs.harvard.edu/full/1988A%26A...202..309B">Planetary theories in rectangular and spherical variables - VSOP 87 solutions</a>
+    
+<h2>Project Overview</h2>
+The purpose of this project is to provide implementations of the VSOP87 theory in multiple languages at different levels of precision.  The source code files
+are hosted on GitHub: <a href="https://github.com/gmiller123456/vsop87-multilang">https://github.com/gmiller123456/vsop87-multilang</a>. An example 
+implementation to compute RA/DEC and ALT/AZ coordinates using Javascript <a href="example_alt_az.html">JavaScript Example</a> is available.
+
+<h2>Under Development</h2>
+This page is currently under development.  It will eventually have more info on the project, so check back later.
+</body>
+</html>
+
