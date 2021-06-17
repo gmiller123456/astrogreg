@@ -6,11 +6,12 @@
         text-align: right;
     }
 </style>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>    
 <body>
     <h1>RA/Dec to Alt/Az Test Cases</h1>
-<p>Implementations of the RA/Dec to Alt/Az conversion algorithms from "Astronomical Algorithms", and from "The Explanatory
-Supplement to the Astronomical Almanac".  This test suit uses Greenwhich <b>Mean</b> Sidereal Time, rather than
+<p>Implementations of the RA/Dec to Alt/Az conversion algorithms from "Astronomical Algorithms", "The Explanatory
+Supplement to the Astronomical Almanac", and "Celestial Mechanics (Taff)".  This test suit uses Greenwhich <b>Mean</b> Sidereal Time, rather than
 Greenwhich <b>Apparent</b> Sidereal Time.  This generally produces an error less than a few arcseconds, though Azimuth errors
 can get large near the zenith.  Adding the Equation of the Equinoxes to GMST produces GAST, and would reduce the error, but
 to get the most accurate results you will need to follow the reduction steps as outlined in the Explanatory Suplement.
@@ -37,6 +38,46 @@ Greg Miller (gmiller@gregmiller.net)
 http://www.celestialprogramming.com/
 Released as public domain
 */
+
+function raDecToAltAz_taff(ra,dec,lat,lon,jd_ut){
+    //Celestial Mechanics (Taff), Eq 3.7
+    const gmst=greenwichMeanSiderealTime(jd_ut);
+    let localSiderealTime=(gmst+lon)%(2*Math.PI);
+    
+    let h=(localSiderealTime - ra);
+    if(h<0){h+=2*Math.PI;}
+    if(h>Math.PI){h=h-2*Math.PI;}
+
+    let a=(Math.PI/2-lat);
+    let m=[
+        [Math.cos(a), 0, -Math.sin(a)],
+        [0, 1, 0],
+        [Math.sin(a), 0, Math.cos(a)]
+    ];
+    let v=[Math.cos(h)*Math.cos(dec), Math.cos(dec)*Math.sin(h), Math.sin(dec)];
+
+    let t=[0,0,0];
+    t[0]=v[0]*m[0][0]+v[1]*m[0][1]+v[2]*m[0][2];
+    t[1]=v[0]*m[1][0]+v[1]*m[1][1]+v[2]*m[1][2];
+    t[2]=v[0]*m[2][0]+v[1]*m[2][1]+v[2]*m[2][2];
+
+    let p=toPolar(t);
+
+
+    return [(p[2]+Math.PI)%(2*Math.PI), Math.PI/2-p[1], localSiderealTime, h];
+}
+
+function toPolar(xyz){
+    let t = new Array();
+    t[0] = Math.sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]);
+    t[1] = Math.acos(xyz[2] / t[0]);
+    t[2] = Math.atan2(xyz[1], xyz[0]);
+
+    if(t[1]<0){t[1]+=2*Math.PI;}
+    if(t[2]<0){t[2]+=2*Math.PI;}
+
+    return t;
+}
 
 //All input and output angles are in radians, jd is Julian Date in UTC
 function raDecToAltAz_meeus(ra,dec,lat,lon,jd_ut){
@@ -148,6 +189,7 @@ function testPosition(body, lat, lon, date,julianDate,raJ2000,decJ2000,ra,dec,az
 
     const aa=raDecToAltAz_meeus(ra*tr,dec*tr,lat*tr,lon*tr,julianDate);
     const s3=raDecToAltAz_expsup(ra*tr,dec*tr,lat*tr,lon*tr,julianDate);
+    const mat=raDecToAltAz_taff(ra*tr,dec*tr,lat*tr,lon*tr,julianDate);
 
     let e=new Array();
     e[0]=date;
@@ -160,6 +202,7 @@ function testPosition(body, lat, lon, date,julianDate,raJ2000,decJ2000,ra,dec,az
     showRow("Horizons",lat,lon,date,ra,dec,az,alt,sideRealTime,hourAngle)
     showRow("Meeus","","","","","",aa[0]/tr,aa[1]/tr,aa[2]/tr/15,aa[3]/tr/15);
     showRow("Exp Sup","","","","","",s3[0]/tr,s3[1]/tr,s3[2]/tr/15,s3[3]/tr/15);
+    showRow("Matrix","","","","","",mat[0]/tr,mat[1]/tr,mat[2]/tr/15,mat[3]/tr/15);
     showRow( "Err","","","","","",e[1],e[2],e[3],e[4]);
 
     r=t.insertRow(t.rows.length);

@@ -13,6 +13,10 @@ Coordinate systems
 Lunar eclipses
 Common sources of inaccuracies
 Accurate Moon rise and set algorithm
+Draw moon/planets with raytracing
+B-V color index https://en.wikipedia.org/wiki/Color_index
+Coloring a lunar eclipse
+Conversion of coordinates with matrixes
 
 Snippets
 Moon Illumination and Age
@@ -33,13 +37,17 @@ Various Nutation algorithms
 -abberation
 -Gravitaional deflection
 -tt to tdb
+-Delta T estimates
 Change from polar to/from rectangular coordinates
 Geocentrix xyz of observer on Earth's surface
 Convert decimal hours/degrees to pretty format
-Approx alt-az
+Amount of sunlight on given day
+Super Moons ("within 90% of its closest approach to Earth in a given orbit")
+Line - Ellipsoid intersection
+Map texture onto sphere using ray tracing
+Vector Matrix algorithms
 
 Apps
-Vector Matrix algorithms
 Saturns Rings
 Comet location
 ISS Lunar and solar transits
@@ -50,5 +58,59 @@ Horizons CGI request builder
 Simple planetarium
 Simple star charts
 Venus at sunset/sunrise chart. https://www.nakedeyeplanets.com/venus-eve-2014-15.htm
+Plainsphere generator
+Lat/Lon from star observations
+Polaris calculator (hour angle, precession, refraction etc.) for polar alignment
+Moon info for a day
+Moon calendar (phase, illumination, rise/set)
 
 Reading List and web resources
+
+Meeus
+Quadratic curve fitting CH4
+Parallactic angle  ch14
+Angle of ecliptic to horizon 14.3
+Atmospheric refraction ch16
+Equation of Time ch28
+Pluto position ch37
+Saturns Rings ch45
+Saturns Moons ch46
+Physical Ephemeris of Moon (librations) ch53
+Lunar eclipses 54.3 ...
+Size of moon, sun and planets ch55
+Magnitude brightness ratio ch56
+Sundials CH58
+
+Duffet-Smith Practical Astronomy with Your Calculator
+Simplified precession, nutation, abberation, refraction
+position angle of the bright limb 59
+Lunar eclipse 73
+
+Meeus Astronomical Formulae for Calculators
+36 simplified Jupiter moons positions
+
+
+The Orerry
+Need to go through this again
+10.5 Sun Plot
+11.3 Analemma Sundial
+
+Astronomy with your personal computer - Duffet-Smith
+P165 moon rise set
+P210 Position of comet
+P177 Eclipses
+P217 PFIT and EFIT, computes orbital elements to observations
+
+Mathematical Astronomy With a Pocket Calculator - Aubrey Jones
+P232 Occultations
+
+Easy PC Astronomy - Duffet-Smith
+P102 Calculate moon phase given moon lat/lon, sun lon.
+
+Celestial Calculations - Lawrence
+Moon Age 7.6.2
+
+Explanatory Supplement 2nd ed
+Geocentric xyz coordinates of observer 3.244-2
+9.221 Visibility of the planets
+9.342 Moonlight illumination of the sky

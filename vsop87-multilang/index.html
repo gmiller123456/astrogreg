@@ -89,16 +89,18 @@ The table below outlines what each solution provides and the coordinate system t
 </code>
 </pre>
 <p>The result is the varialbes earth, emb, and moon will contain an array of three Doubles which are the J2000 rectangular coordinates of each body in units of AU.
-    Such coordinates are of little use to most people directly.  So the example above shows how to convert them into more useful coordinates.
+    Such coordinates are of little use to most people directly, so the example above shows how to convert them into more useful coordinates.
 </p>
 <h2>Accuracy</h2>
-Source code for all versions is provided at the Github repository above, but this page will focus mainly on VSOP87A,
-arguably the most useful for amateurs in general, since it can provide the position of the Moon.  Since the accuracy is far greater than that needed for most amateur
+Source code for all versions is provided at the Github repository above, but this graph will focus on VSOP87A,
+arguably the most useful for amateurs in general.  Since the accuracy is far greater than that needed for most amateur
 applications, it can be useful to truncate the series to save computation time in exchange for lower accuracy.
 <p>
 The interactive graph below is populated with precomputed data from 2000BC to 3000AD.  Use the checkboxes to get an idea for the accuracy over a given time period.
-Note the Moon is unchecked by default, as the "pico", "nano", and "micro" versions are essentially unusable for any date range.  Keep in mind that you may copy
+Note the Moon is unchecked by default, as the "pico", "nano", and "micro" versions are essentially unusable for the Moon for any date range.  Keep in mind that you may copy
 the functions for computing one body into other versions, essentially mixing and matching accuracy editions.
+</p>
+<p>The Y-axis is the error, in degrees, as viewed from the center of the Earth, compared to the full VSOP87a version.</p>
 <form>
     <div class="graphOption">
         <table>

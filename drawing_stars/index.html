@@ -1,0 +1,39 @@
+<html>
+<head>
+<title></title>
+<link rel="stylesheet" href="../default.css">
+<style>
+body{}
+</style>
+</head>    
+<body>
+https://michi83.github.io/planetarium/
+var magnitude = Math.max(6.5 - body.magnitude, 0);
+context.beginPath();
+context.arc(x, y, magnitude, 0, 2 * Math.PI);
+gradient = context.createRadialGradient(x, y, 0, x, y, magnitude);
+gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+gradient.addColorStop(1, 'rgba(0, 0, 255, 0)');
+context.fillStyle = gradient;
+context.fill();
+
+Mag to flux:
+https://www.gnu.org/software/gnuastro/manual/html_node/Magnitude-to-flux-conversion.html
+
+
+
+https://github.com/slowe/VirtualSky/blob/gh-pages/virtualsky.js
+d = 0.8*Math.max(3-mag/2.1, 0.5);
+if(this.showstars) c.arc(p.x,p.y,d,0,Math.PI*2,true);
+
+Stellarium (SkyDrawer.cpp)
+// Compute the ln of the luminance for a point source with the given mag for the current FOV
+float SkyDrawer::pointSourceMagToLnLuminance(float mag) const
+{
+	return -0.92103f*(mag + 12.12331f) + lnfovFactor;
+}
+<script>
+
+</script>
+</body>
+</html>

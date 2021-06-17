@@ -4,6 +4,7 @@
 <title>Convert RA/DEC to Alt/Az</title>
 <link rel="stylesheet" href="default.css">
 <link rel="stylesheet" href="highlight/styles/default.css">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
     .algorithmdiv{
         border: solid;
@@ -22,12 +23,20 @@
 <p>Converts a RA/DEC (J2000) coordinate to approximate Alt/Az (J2000) coordinate.  This uses Greenwich <b>Mean</b> Sidereal Time to compute the approximate horizon coordiates, if you need
 the coordiates also corrected for nutation, you will need to modify this to use Greenwhich <b>Apparent</b> Sidereal Time.  It is assumed that all corrections the user has
 interest in have already been applied to the RA/Dec coordinates.</p>
-<p>You will likely come across two different sets of equations for the RA/Dec to Alt/Az conversion.  One set like those from the Explanatory
-    Supplement, and another set like those from Astronomical Algorithms.  The Explanatory Supplement set is derived from spherical trigonometry
-    while the other is a more direct approach.  The Astronomical Algorithms version will generally be easier to implement using the atan2 function
-    which performs the quadrant checks for you.  This implementation uses the Astronomical Algorithms set, but an implementation of the other
-    is available in the set of <a href="radec_to_altaz_testtdata.html">test data</a> which validates both sets of equations, and can be used as an example of how to implement the Explanatory
-    Supplement style.
+<p>
+You will likely come across different sets of equations for the RA/Dec to Alt/Az conversion.  I have included three below
+from three different sources.  The first is derived from spherical trigonometry and is from the Explanatory Supplement to
+the Astronomical Almanac 3rd ed.  The second is from Astronomical Algorithms, using this in combination with the atan2 function
+included in most programming languages, is usually the easiest to implement.  And the last is a matrix form, which is useful
+if you already have your coordinates in matrix form, or want to generalize the transformations.
+
+
+One set like those from the Explanatory
+Supplement, and another set like those from Astronomical Algorithms.  The Explanatory Supplement set is derived from spherical trigonometry
+while the other is a more direct approach.  The Astronomical Algorithms version will generally be easier to implement using the atan2 function
+which performs the quadrant checks for you.  This implementation uses the Astronomical Algorithms set, but an implementation of the other
+is available in the set of <a href="radec_to_altaz_testtdata.html">test data</a> which validates both sets of equations, and can be used as an example of how to implement the Explanatory
+Supplement style.
 </p>
 <p>I have altered the algorithm from the method it is described in the book.  I have converted it so that Longitudes to the West are negative (like GPS
     coordinates), and so that 0 Azimuth is North (like a compass).  I believe these changes make it behave more like a user would expect.
@@ -35,20 +44,63 @@ interest in have already been applied to the RA/Dec coordinates.</p>
 <span class="algorithmdiv">
     <b>Explanatory Supplement eq 7.16</b><br>
     <br>
-\(
-\cos \mathit{a} \sin A_{z} = -\cos \delta \sin \mathit{h}
-\\
-\cos \mathit{a} \cos A_{z} = \sin \delta \cos \phi - \cos \delta \cos \mathit{h} \sin \phi
-\\
-\sin \mathit{a} = \sin \delta \sin \phi + \cos \delta \cos \mathit{h} \cos \phi
-\)
+
+    \(
+    \textbf eq1\ \ \ \cos \mathit{a} \sin A_{z} = -\cos \delta \sin \mathit{h}
+    \\
+    \textbf eq2\ \ \ \cos \mathit{a} \cos A_{z} = \sin \delta \cos \phi - \cos \delta \cos \mathit{h} \sin \phi
+    \\
+    \textbf eq3\ \ \ \sin \mathit{a} = \sin \delta \sin \phi + \cos \delta \cos \mathit{h} \cos \phi
+    \)
+<p>
+Where \(h\) is the hour angle, \(\delta\) is the declination, \(A_{z}\) is azimuth, \(a\) is altitude, \(\phi\) is the lattitude.
+You will need to check the signs of \(\cos A_z\) and \(\sin A_z\) to determine the propper quadrant:
+</p>
+<p>if \(\cos A_z\) > 0 and \(\sin A_z\) > 0: use either eq1 or eq2</p>
+
+<p>if \(\cos A_z\) > 0 and \(\sin A_z\) < 0: use eq1</p>
+
+<p>if \(\cos A_z\) < 0 and \(\sin A_z\) < 0: use \(A_z\) = 360 - eq2</p>
+
+<p>if \(\cos A_z\) < 0 and \(\sin A_z\) > 0: use eq2</p>
+
 </span><span class="algorithmdiv">
     <b>Astronomical Algorithms eq 13.5, 13.6</b><br>
     <br>
 \(
-\tan A = \frac{\sin H}{\cos H \sin \varphi  - \tan \delta \cos \varphi} \\
+\tan A = \frac{\sin H}{\cos H \sin \varphi  - \tan \delta \cos \varphi}
+\\
 \sin h = \sin \varphi \sin \delta + \cos \varphi \cos \delta \cos H
 \)
+<p>
+Where \(H\) is the hour angle, \(\delta\) is the declination, \(A\) is azimuth, \(h\) is altitude, \(\varphi\) is the lattitude.
+</p>
+</span>
+<span class="algorithmdiv">
+    <b>Computational Spherical Astronomy (Taff) 1.1, 2.7</b><br>
+    <br>
+\(
+\\
+\mathbf{l}(h,\delta)=
+\begin{bmatrix}
+\cos \delta\cos h \\
+\cos \delta\sin h \\
+\sin \delta \\
+\end{bmatrix}\\
+\\~\\
+\mathbf{l}(A,a)=R_2(90^{\circ}-\Phi )\ \mathbf{l}(h,\delta)
+\)
+<p>
+Where \(h\) is the hour angle, \(\delta\) is the declination, \(A\) is azimuth, \(a\) is altitude, \(\Phi\) is the lattitude.
+</p>
+\(\mathbf{l}(A,a)\) will be in cartesian coordinates (\(x, y, z\)), to convert to RA/Dec:
+<p>
+\(
+r = \sqrt{ x^2+y^2+z^2} \\
+\cos A = z / r \\
+\tan a = y / x \\
+\)
+</p>
 </span>
 <form>
     <table>
