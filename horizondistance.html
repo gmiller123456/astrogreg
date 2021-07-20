@@ -1,0 +1,274 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>Compute Horizon Distance</title>
+<link rel="stylesheet" href="default.css">
+<link rel="stylesheet" href="highlight/styles/default.css">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+    .algorithmdiv{
+        border: solid;
+        display: inline-block;
+        padding: 10px;
+        margin: 10px;
+    }
+    td{
+        text-align: right;
+    }
+    .clickOption{
+        text-decoration: underline;
+        color: blue;
+        cursor: pointer;
+    }
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/katex.min.css" integrity="sha384-Um5gpz1odJg5Z4HAmzPtgZKdTBHZdw8S29IecapCSB31ligYPhHQZMIlWLYQGVoc" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/katex.min.js" integrity="sha384-YNHdsYkH6gMx9y3mRkmcJ2mFUjTd0qNQQvY9VYZgQd7DcN7env35GzlmFaZ23JGp" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/contrib/auto-render.min.js" integrity="sha384-vZTG03m+2yp6N6BNi5iM4rW4oIwk5DfcNdFfxkk9ZWpDriOkXX8voJBFrAO7MpVl" crossorigin="anonymous"
+    onload="renderMathInElement(document.body);"></script>
+</head>    
+<body>
+    <h1>Compute Horizon Distance</h1>
+    <canvas id="diagram" width=200 height=200></canvas><br>
+
+    Assumes a spherical body, without atmospheric refraction.<br>
+    \(d\) distance from viewpoint to horizon.<br>
+    \(R\) radius of body.<br>
+    \(h\) height of viewpoint above body's surface.<br>
+    \(s\) Length of the arc along the body's surface, from the point exactly below the observer, to the horizon.<br>
+    \(\gamma\) Angle between the point on the surface of the body exactly below the observer, the center of the body, and the horizon<br>
+
+    <p>For Earth, \(R\) is 6,378 km (3,963 mi) for the equitorial radius, and 6,357 km (3,950 mi) for the polar radius.</p>
+
+    <h3>Computes the distance from the observer's eye to the point on the horizon</h3>
+    <div class=algorithmdiv>\(d = \sqrt{2Rh+h^2} \)</div><br>
+
+    <h3>Arc length along Earth's surface from observer's position to horizon</h3>
+    Computes the length of the arc along the Earths surface, starting at the point directly below the observer
+    to the horzion.
+    <div class=algorithmdiv>
+        \(s=R\cos^{-1}\left( \dfrac{R}{R+h}\right)\)
+    </div>
+
+    <h3>Angle to horizon in degrees</h3>
+    Computes the angle between the point below the observer, the center of the Earth, and the horizon.
+    <br>
+    <div class="algorithmdiv">\[\gamma=\cos^{-1}\left( \dfrac{R}{R+h} \right) \]</div>
+    <h3>Approximate, when height above Erath is small compared to Earth's radius:</h3>
+
+    <div class=algorithmdiv>
+        \(h\) in feet, \(d\) in Miles<br>
+        \(d \approx s \approx 1.22\sqrt{h}\)<br>
+    </div>
+    <div class=algorithmdiv>
+        \(h\) in meters, \(d\) in kilometers<br>
+        \(d \approx s \approx 3.57\sqrt{h}\)<br>
+    </div>
+
+    <h3>Test Data</h3>
+
+    <table border=1 cellspacing=0 id=outputdata>
+    <tr>
+        <th>\(h\)</th>
+        <th>Equitorial</th>
+        <th>Polar</th>
+        <th>Approximation</th>
+        <th>Arc Length</th>
+        <th>\(\gamma\)</th>
+    </tr>
+    </table>
+<script>
+
+drawDiagram();
+generateTestData();
+
+function drawDiagram(){
+    const canvas = document.getElementById("diagram");
+    const w=canvas.width;
+    const h=canvas.height;
+    const ctx = canvas.getContext("2d");
+
+    const r=w/2.75;
+    const angle=(-45)*Math.PI/180.0; //convert to radians
+    const cx=w/2;
+    const cy=h/2;
+
+    ctx.font = "20px Georgia";
+
+    //full circle
+    ctx.strokeStyle="rgba(150,150,150,1)";
+    ctx.fillStyle=ctx.strokeStyle;
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2, true);
+    ctx.stroke();
+
+    //Radius line
+    ctx.beginPath();
+    ctx.strokeStyle="rgb(150,255,150)";
+    ctx.fillStyle=ctx.strokeStyle;
+    ctx.moveTo(cx,cy);
+    ctx.lineTo(cx,cy-r);
+    ctx.stroke();
+    ctx.fillText("R",cx-25,cy-r/2);
+
+    //angled line
+    ctx.beginPath();
+    ctx.strokeStyle="rgb(150,150,150)";
+    ctx.fillStyle=ctx.strokeStyle;
+    ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+r*Math.cos(angle),cy+r*Math.sin(angle));
+    ctx.stroke();
+
+    //h line
+    ctx.beginPath();
+    ctx.strokeStyle="rgb(150,150,255)";
+    ctx.fillStyle=ctx.strokeStyle;
+    ctx.moveTo(cx,cy-r);
+    ctx.lineTo(cx,0);
+    ctx.stroke();
+    ctx.fillText("h",cx-25,(cy-r)/2);
+
+    //d line
+    ctx.beginPath();
+    ctx.strokeStyle="rgb(150,255,255)";
+    ctx.fillStyle=ctx.strokeStyle;
+    ctx.moveTo(cx,0);
+    ctx.lineTo(cx+r*Math.cos(angle),cy+r*Math.sin(angle));
+    ctx.stroke();
+    ctx.fillText("d",cx+r/.9*Math.cos(angle+angle/2),cy+r/.9*Math.sin(angle+angle/2));
+
+    //gamma angle arc
+    ctx.beginPath();
+    ctx.strokeStyle="rgb(255,150,255)";
+    ctx.fillStyle=ctx.strokeStyle;
+    ctx.arc(cx,cy,r/3,-Math.PI/2,-Math.PI/2-angle,false);
+    ctx.stroke();
+    ctx.fillText("\u03b3",cx+r/3*Math.cos(angle/2),cy+r/3*Math.sin(angle/2));
+
+    //gamma angle arc
+    ctx.beginPath();
+    ctx.strokeStyle="rgb(255,150,150)";
+    ctx.fillStyle=ctx.strokeStyle;
+    ctx.arc(cx,cy,r,-Math.PI/2,-Math.PI/2-angle,false);
+    ctx.stroke();
+    ctx.fillText("s",cx+r/1.35*Math.cos(angle+angle/2),cy+r/1.35*Math.sin(angle+angle/2));
+
+
+
+}
+
+function generateTestData(){
+    const h=[0,.5,1,1.5,2,3,4,5,6,7,8,9,10,20,30,40,50,100,200,500,1000,2000,10000,100000,1000000,10000000,1000000000]; //meters
+    for(let i=0;i<h.length;i++){
+        testValue(h[i]);
+    }
+}
+
+function prettyMetric(f){
+    //const hFeet=3.28084*h;
+
+    let t=f;
+
+    let units="m";
+
+    if(t>=1000){
+        units="km";
+        t/=1000;
+    }
+
+    if(t>20){
+        t= Math.floor(t);
+    } else {
+        t=Math.floor(t*10)/10;
+    }
+    return Number(t).toLocaleString()+" "+units;
+}
+
+function prettyUS(f){
+    let t=f;
+
+    let units="feet";
+
+    if(t>=5280){
+        units="mi";
+        t/=5280;
+    }
+
+    if(t>20){
+        t= Math.floor(t);
+    } else {
+        t=Math.floor(t*10)/10;
+    }
+    return Number(t).toLocaleString()+" "+units;
+}
+
+function pretty(f){
+    const metric=prettyMetric(f);
+    const US=prettyUS(f*3.28084);
+
+    return metric+" ("+US+")";
+}
+
+function testValue(h){
+
+    const t=document.getElementById("outputdata");
+    const r=t.insertRow(t.rows.length);
+    let c;
+    c=r.insertCell(0);
+    c.innerHTML=pretty(h);
+
+    c=r.insertCell(r.cells.length);
+    c.innerHTML=pretty(horizonEquitorial(h/1000)*1000);
+
+    c=r.insertCell(r.cells.length);
+    c.innerHTML=pretty(horizonPolar(h/1000)*1000);
+
+    c=r.insertCell(r.cells.length);
+    c.innerHTML=pretty(horizonApproxKm(h)*1000);
+
+    c=r.insertCell(r.cells.length);
+    c.innerHTML=pretty(horizonArcLength(h/1000)*1000);
+
+    c=r.insertCell(r.cells.length);
+    c.innerHTML=Math.floor(horizonAngle(h/1000)*1000)/1000 + "&deg;"
+}
+
+function horizonAngle(h){
+    const R=6378;
+    const gamma=Math.acos(R/(R+h));
+    return gamma*180/Math.PI;  //Convert from radians to Degrees
+}
+
+function horizonArcLength(h){
+    const R=6378;
+    const s=R*Math.acos(R/(R+h));
+    return s;
+}
+
+function horizonEquitorial(h){
+    const R=6378;
+    const d=Math.sqrt(2*R*h+h*h);
+    return d;
+}
+
+function horizonPolar(h){
+    const R=6357;
+    const d=Math.sqrt(2*R*h+h*h);
+    return d;
+}
+
+function horizonApproxKm(h){
+    const R=6378;
+    const d=3.57*Math.sqrt(h);
+    return d;
+}
+
+function horizonApproxMi(h){
+    const R=3963;
+    const d=1.22*Math.sqrt(h);
+    return d;
+}
+</script>
+</body>
+</html>

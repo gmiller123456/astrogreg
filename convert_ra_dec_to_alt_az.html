@@ -29,16 +29,16 @@ from three different sources.  The first is derived from spherical trigonometry 
 the Astronomical Almanac 3rd ed.  The second is from Astronomical Algorithms, using this in combination with the atan2 function
 included in most programming languages, is usually the easiest to implement.  And the last is a matrix form, which is useful
 if you already have your coordinates in matrix form, or want to generalize the transformations.
-
-
-One set like those from the Explanatory
-Supplement, and another set like those from Astronomical Algorithms.  The Explanatory Supplement set is derived from spherical trigonometry
-while the other is a more direct approach.  The Astronomical Algorithms version will generally be easier to implement using the atan2 function
-which performs the quadrant checks for you.  This implementation uses the Astronomical Algorithms set, but an implementation of the other
-is available in the set of <a href="radec_to_altaz_testtdata.html">test data</a> which validates both sets of equations, and can be used as an example of how to implement the Explanatory
-Supplement style.
 </p>
-<p>I have altered the algorithm from the method it is described in the book.  I have converted it so that Longitudes to the West are negative (like GPS
+<p>
+The matrix form is likely the most useful for most applications since you will likely need to perform the conversion to
+rectagular coordinates for other purposes.  But, if you need to provide both the RA/Dec and Alt/Az coordinates, Meuus' method
+will save you a few steps.
+</p>
+
+This implementation uses the Astronomical Algorithms set, but an implementation of the other
+is available in the set of <a href="radec_to_altaz_testtdata.html">test data</a> which validates both sets of equations, and can be used as an example of how to implement the Explanatory
+Supplement style. I have altered the algorithm from the method it is described in the book.  I have converted it so that Longitudes to the West are negative (like GPS
     coordinates), and so that 0 Azimuth is North (like a compass).  I believe these changes make it behave more like a user would expect.
 </p>
 <span class="algorithmdiv">
@@ -68,8 +68,10 @@ You will need to check the signs of \(\cos A_z\) and \(\sin A_z\) to determine t
     <b>Astronomical Algorithms eq 13.5, 13.6</b><br>
     <br>
 \(
-\tan A = \frac{\sin H}{\cos H \sin \varphi  - \tan \delta \cos \varphi}
-\\
+\tan A = \dfrac{\sin H}{\cos H \sin \varphi  - \tan \delta \cos \varphi}
+\)
+<br><br>
+\(
 \sin h = \sin \varphi \sin \delta + \cos \varphi \cos \delta \cos H
 \)
 <p>

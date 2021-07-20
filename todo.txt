@@ -46,6 +46,7 @@ Super Moons ("within 90% of its closest approach to Earth in a given orbit")
 Line - Ellipsoid intersection
 Map texture onto sphere using ray tracing
 Vector Matrix algorithms
+Angular distance between two points
 
 Apps
 Saturns Rings
