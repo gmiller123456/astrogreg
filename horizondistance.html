@@ -39,13 +39,14 @@
     \(\gamma\) Angle between the point on the surface of the body exactly below the observer, the center of the body, and the horizon<br>
 
     <p>For Earth, \(R\) is 6,378 km (3,963 mi) for the equitorial radius, and 6,357 km (3,950 mi) for the polar radius.</p>
+    <p>The value \(s\) can be used to determine the visible field of a satellite, as well as where a satellite will be visible from Earth.</p>
 
     <h3>Computes the distance from the observer's eye to the point on the horizon</h3>
     <div class=algorithmdiv>\(d = \sqrt{2Rh+h^2} \)</div><br>
 
     <h3>Arc length along Earth's surface from observer's position to horizon</h3>
     Computes the length of the arc along the Earths surface, starting at the point directly below the observer
-    to the horzion.
+    to the horzion.<br>
     <div class=algorithmdiv>
         \(s=R\cos^{-1}\left( \dfrac{R}{R+h}\right)\)
     </div>
@@ -65,8 +66,15 @@
         \(d \approx s \approx 3.57\sqrt{h}\)<br>
     </div>
 
-    <h3>Test Data</h3>
+    <h3>Test Data for Earth</h3>
 
+    <p>
+    <form>
+        <label class=formlabel>h = </label>
+        <input class=formbox type=text id=formH />
+        <input type=button value="Compute" onclick='computeForm()'>
+    </form>
+    </p>
     <table border=1 cellspacing=0 id=outputdata>
     <tr>
         <th>\(h\)</th>
@@ -77,6 +85,8 @@
         <th>\(\gamma\)</th>
     </tr>
     </table>
+
+
 <script>
 
 drawDiagram();
@@ -105,7 +115,7 @@ function drawDiagram(){
 
     //Radius line
     ctx.beginPath();
-    ctx.strokeStyle="rgb(150,255,150)";
+    ctx.strokeStyle="rgb(50,220,50)";
     ctx.fillStyle=ctx.strokeStyle;
     ctx.moveTo(cx,cy);
     ctx.lineTo(cx,cy-r);
@@ -131,7 +141,7 @@ function drawDiagram(){
 
     //d line
     ctx.beginPath();
-    ctx.strokeStyle="rgb(150,255,255)";
+    ctx.strokeStyle="rgb(100,200,200)";
     ctx.fillStyle=ctx.strokeStyle;
     ctx.moveTo(cx,0);
     ctx.lineTo(cx+r*Math.cos(angle),cy+r*Math.sin(angle));
@@ -153,16 +163,17 @@ function drawDiagram(){
     ctx.arc(cx,cy,r,-Math.PI/2,-Math.PI/2-angle,false);
     ctx.stroke();
     ctx.fillText("s",cx+r/1.35*Math.cos(angle+angle/2),cy+r/1.35*Math.sin(angle+angle/2));
-
-
-
 }
 
 function generateTestData(){
     const h=[0,.5,1,1.5,2,3,4,5,6,7,8,9,10,20,30,40,50,100,200,500,1000,2000,10000,100000,1000000,10000000,1000000000]; //meters
     for(let i=0;i<h.length;i++){
-        testValue(h[i]);
+        testValue(h[i],false);
     }
+}
+
+function computeForm(){
+    testValue(document.getElementById("formH").value,true);
 }
 
 function prettyMetric(f){
@@ -210,10 +221,15 @@ function pretty(f){
     return metric+" ("+US+")";
 }
 
-function testValue(h){
+function testValue(h,top){
 
     const t=document.getElementById("outputdata");
-    const r=t.insertRow(t.rows.length);
+    let r;
+    if(top==true){
+        r=t.insertRow(1);
+    } else {
+        r=t.insertRow(t.rows.length);
+    }
     let c;
     c=r.insertCell(0);
     c.innerHTML=pretty(h);

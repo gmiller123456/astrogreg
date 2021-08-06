@@ -17,6 +17,7 @@ Draw moon/planets with raytracing
 B-V color index https://en.wikipedia.org/wiki/Color_index
 Coloring a lunar eclipse
 Conversion of coordinates with matrixes
+Equitorial Platform measurements
 
 Snippets
 Moon Illumination and Age
@@ -47,6 +48,12 @@ Line - Ellipsoid intersection
 Map texture onto sphere using ray tracing
 Vector Matrix algorithms
 Angular distance between two points
+Optics
+-image size on CCD
+-Magnification
+-focal ratio
+-max magnification
+-Mathematics for Amatures lens formulas
 
 Apps
 Saturns Rings
@@ -64,6 +71,7 @@ Lat/Lon from star observations
 Polaris calculator (hour angle, precession, refraction etc.) for polar alignment
 Moon info for a day
 Moon calendar (phase, illumination, rise/set)
+Magnetic to true North conversion https://www.ngdc.noaa.gov/IAGA/vmod/igrf.html
 
 Reading List and web resources
 

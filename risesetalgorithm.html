@@ -5,7 +5,11 @@
 	<link rel="stylesheet" href="default.css">
 	<link rel="stylesheet" href="highlight/styles/default.css">
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
-
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/katex.min.css" integrity="sha384-Um5gpz1odJg5Z4HAmzPtgZKdTBHZdw8S29IecapCSB31ligYPhHQZMIlWLYQGVoc" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/katex.min.js" integrity="sha384-YNHdsYkH6gMx9y3mRkmcJ2mFUjTd0qNQQvY9VYZgQd7DcN7env35GzlmFaZ23JGp" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/contrib/auto-render.min.js" integrity="sha384-vZTG03m+2yp6N6BNi5iM4rW4oIwk5DfcNdFfxkk9ZWpDriOkXX8voJBFrAO7MpVl" crossorigin="anonymous"
+        onload="renderMathInElement(document.body);"></script>
+    
 
 </head>
 <body>
@@ -30,7 +34,38 @@
 	<tr><td align=right>Transit:</td><td id='transit'></td></tr>
 	<tr><td align=right>Set:</td><td id='set'></td></tr>
 </table>
+<p>
+\(\cos H_0 = \dfrac{\sin h_0 - \sin \varphi \sin \delta }{\cos \varphi \cos \delta}\)<br>
+<br>
+If \(\cos H_0\) < -1 or > 1, the point is either always above or below the horizon.<br>
+<br>
+\(T=(jd-2451545.0)/36525.0 \)<br>
+<br>
+\(\Theta_0 = 280.46061837+360.98564736629*(jd-2451545.0)+0.000387933T^2 - T^3/38710000.0\) <br>
+<br>
+\(transit = \dfrac{\delta + L - \Theta_0 }{360^{\circ}}\)<br>
+<br>
+\(rise = transit - \dfrac{H_0}{360^{\circ}}\)<br>
+<br>
+\(set = transit + \dfrac{H_0}{360^{\circ}}\)<br>
 
+</p>
+<p>
+    \(jd\) is the Julian Date for the date in question.
+    \(\delta\) Declination<br>
+    \(L\) Longitude<br>
+    \(\varphi\) Latitude<br>
+    \(h_0\) Apparent rise or set angle, -0.8333 for the Sun, +0.125 for the Moon, and -0.5667 for most other objects.<br>
+    \(\Theta_0\) Greenwich sidereal time at 0h for the day in question.
+</p>
+<p>
+    The equations below are from "Easy PC Astronomy" by Peter Duffett-Smith.  \(A_r\) is the azimuth of the object when it rises, and
+    \(A_s\) is the setting azimuth.<br>
+    \(\cos A_r = \dfrac{\sin \delta + \sin d \sin \varphi}{\cos h_0 \cos \varphi}\)<br>
+    <br>
+    
+    \(\cos A_s = 360 - A_r\)
+</p>
 <p>
 The output is adjusted for the current time zone, which may differ from the time zone in effect for a different date (e.g. Daylight Saving Time)
 <p>
@@ -75,7 +110,7 @@ function getRiseSet(jd,lat,lon,ra,dec){
 	return [constrain(transit)*24.0,constrain(rise)*24.0,constrain(set)*24.0];
 }
 
-//Greenwhich mean sidreal time from Meeus page 87
+//Greenwhich mean sidreal time from Meeus page 88 eq 12.4
 //Input is julian date, does not have to be 0h
 //Output is angle in degrees
 function GMST(jd){
