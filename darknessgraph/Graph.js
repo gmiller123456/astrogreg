@@ -2,33 +2,15 @@ class Graph{
 
     constructor (data){
         this.lineHeight=11;
-        this.cellWidth=2;
-        this.offset=10*6;
+        this.cellWidth=20;
+        this.xoffset=10*6;
+        this.yoffset=10;
 
+        this.data=data;
         this.displayData(data);
-    
-    
+
     }
     
-    isUp(object, hour){
-        const t=object[0];
-        const r=object[1];
-        const s=object[2];
-
-        if(object[3]<-1) return true;
-        if(object[3]>1) return false;
-
-        if(r<s){
-            if(hour<r) return false;
-            if(hour>s) return false;
-            return true;
-        } else {
-            if(hour<s) return true;
-            if(hour>r) return true;
-            return false;
-        }
-    }
-
     graphPopup(e){
         //const f=document.getElementById("follow");
         //f.style.left=e.pageX+20+"px";
@@ -36,63 +18,277 @@ class Graph{
     }
 
     getX(hour){
-
+        const t=this.cellWidth*hour+this.xoffset;
+        return t;
     }
 
-    displayData(data){
-        const canvas=document.createElement("CANVAS");
-        canvas.addEventListener("mousemove",this.graphPopup);
-        const ctx = canvas.getContext("2d");
+    getY(i){
+        return i*this.lineHeight+this.yoffset;
+    }
 
-        canvas.width=this.cellWidth*24*8+this.offset;
-        canvas.height=data.length*this.lineHeight;
-        canvas.style.border="solid 1px";
+    hourToHour(hour,tz){
+        let h=hour-tz-12;
+        while(h<0)h+=24;
+        while(h>24)h-=24;
+
+        return h;
+    }
+
+    formatTime(date){
+        let hours=date.getHours();
+        let min=date.getMinutes();
+
+        if(hours<10)hours="0"+hours;
+        if(min<10)min="0"+min;
+
+        return hours+":"+min;
+    }
+
+    initCanvas(){
+        const canvas=document.createElement("CANVAS");
+        this.canvas=canvas;
+        canvas.addEventListener("mousemove",this.graphPopup);
+        this.ctx = canvas.getContext("2d");
+        const ctx=this.ctx;
+
+        canvas.width=this.getX(24);
+        canvas.height=this.getY(this.data.length-1);
 
         ctx.beginPath();
         ctx.fillStyle="#225";
-        ctx.fillRect(this.offset,0,canvas.width,canvas.height);
+        ctx.fillRect(this.xoffset,0,canvas.width,canvas.height);
         ctx.fill();
 
-        for(let i=0;i<data.length;i++){
-            const date=new Date(UnixTimeFromJulianDate(data[i].jd));
-            const tz=date.getTimezoneOffset()/60.0;
+        ctx.beginPath();
+        ctx.fillStyle="white";
+        ctx.fillRect(this.getX(24),0,this.getX(24)+(10*6*2),canvas.height);
+        ctx.fill();
 
-            const formattedDate=(date.getYear()+1900)+"-"+(date.getMonth()+1)+"-"+date.getDate();
+        return canvas;
+    }
 
-            //dc.innerText=formattedDate;
-            ctx.fillStyle="black";
-            ctx.textAlign="right";
-            ctx.fillText(formattedDate,this.offset-5,i*this.lineHeight+this.lineHeight);
+    displayData(data){
+        const canvas=this.initCanvas();
 
-            let j=0;
-            while(j<24){
-                let hour=j+tz-12;
-                while(hour<0)hour+=24;
-                while(hour>24)hour-=24;
+        for(let i=0;i<data.length-2;i++){
+            const d=data[i];
+            const dn=data[i+1];
 
-                let color="#225";
+            this.drawDateLabel(d.date,i);
+            this.drawSun(d,dn,i);
+            this.drawMoon(d,dn,i);
 
-                if(this.isUp(data[i].sunRST,hour)){
-                    color="yellow";
-                } else if(this.isUp(data[i].civilTwilightRST,hour)){
-                    color="rgb(255,0,0)";
-                } else if(this.isUp(data[i].astroTwilightRST,hour)){
-                    color="#822";
-                } else if(this.isUp(data[i].moonRST,hour)){
-                    const temp=Math.floor(data[i].moonIllunination*10);
-                    color="rgba(255,255,255,"+data[i].moonIllunination/2.0+")";
-                }
-                
-                ctx.beginPath();
-                ctx.fillStyle=color;
-                ctx.fillRect(this.cellWidth*j*8+this.offset,i*this.lineHeight,this.cellWidth,this.lineHeight);
-                ctx.fill();
-
-                j+=.125;
-            }
         }
-
+        this.graphOther();
+        this.drawGrid();
         document.getElementById("output").appendChild(canvas);
     }
+
+    drawDateLabel(date,i){
+        const formattedDate=(date.getYear()+1900)+"-"+(date.getMonth()+1)+"-"+date.getDate();
+        this.ctx.font="10px sans-serif";
+        this.ctx.fillStyle="rgb(150,150,150)";
+        if(date.getDate()==1){
+            this.ctx.font="bold 10px sans-serif";
+            this.ctx.fillStyle="rgb(0,0,0)";
+        }
+
+        this.ctx.textAlign="right";
+        this.ctx.fillText(formattedDate,this.xoffset-5,this.getY(i)); //Bold first of each month
+    }
+
+    drawMoon(d,dn,i){
+        const ctx=this.ctx;
+        const x0=this.getX(0);
+        const x24=this.getX(24)
+        const y=this.getY(i);
+        const y2=this.getY(i+1)
+
+        let moonR1=this.getX(this.hourToHour(d.moonRST[1],d.tz));
+        let moonS1=this.getX(this.hourToHour(d.moonRST[2],d.tz));
+        let moonR2=this.getX(this.hourToHour(dn.moonRST[1],dn.tz));
+        let moonS2=this.getX(this.hourToHour(dn.moonRST[2],dn.tz));
+
+        //const moonColor="rgba(255,255,255,.5)";
+        const moonColor="rgba(255,255,255,"+d.moonIllunination/2.0+")";
+        if(moonR1>moonS1 && Math.abs(moonR1-moonR2)>50){
+            this.poly(moonColor,ctx,x0,y,moonS1,y,moonS2,y2,moonR2,y2);
+        } else if(moonR1<moonS1){
+            if(Math.abs(moonS1-moonS2)>50){
+                moonS2=x24;
+            }
+            this.poly(moonColor,ctx,moonR1,y,moonS1,y,moonS2,y2,moonR2,y2);
+        } else {
+            this.poly(moonColor,ctx,x0,y,moonS1,y,moonS2,y2,x0,y2);
+            this.poly(moonColor,ctx,x24,y,moonR1,y,moonR2,y2,x24,y2);
+        }
+    }
+
+    drawSun(d,dn,i){
+        const ctx=this.ctx;
+        const x0=this.getX(0);
+        const x24=this.getX(24)
+        const y=this.getY(i);
+        const y2=this.getY(i+1)
+
+        const sunR1=this.getX(this.hourToHour(d.sunRST[1],d.tz));
+        const sunS1=this.getX(this.hourToHour(d.sunRST[2],d.tz));
+        const sunR2=this.getX(this.hourToHour(dn.sunRST[1],dn.tz));
+        const sunS2=this.getX(this.hourToHour(dn.sunRST[2],dn.tz));
+
+        const twiR1=this.getX(this.hourToHour(d.astroTwilightRST[1],d.tz));
+        const twiS1=this.getX(this.hourToHour(d.astroTwilightRST[2],d.tz));
+        const twiR2=this.getX(this.hourToHour(dn.astroTwilightRST[1],dn.tz));
+        const twiS2=this.getX(this.hourToHour(dn.astroTwilightRST[2],dn.tz));
+
+        const sunColor="rgb(175,175,0)";
+
+        if(d.sunRST[3]<=-1){
+            //TODO: artic circle
+            //never up
+            //>=1 always up
+        }
+        if(Math.abs(sunR1-sunR2)>50){
+            this.poly(sunColor,ctx,x0,y,sunS1,y,sunS2,y2,x0,y2);
+        }else if(Math.abs(sunS1-sunS2)>50){
+            this.poly(sunColor,ctx,sunR1,y,x24,y,x24,y2,sunR2,y2);
+        } else if (sunS1<sunR1) {
+            this.poly(sunColor,ctx,x0,y,sunS1,y,sunS2,y2,x0,y2);
+            this.poly(sunColor,ctx,x24,y,sunR1,y,sunR2,y2,x24,y2);
+        } else {
+            this.poly(sunColor,ctx,sunR1,y,sunS1,y,sunS2,y2,sunR2,y2)
+        }
+        
+        if(Math.abs(sunS1-twiS1)<50){
+            const gradient1=ctx.createLinearGradient(sunS1,y,twiS1,y2);
+            gradient1.addColorStop(0,"red");
+            gradient1.addColorStop(1,"rgba(100,0,0,0)");
+            this.poly(gradient1,ctx,sunS1,y,twiS1,y,twiS2,y2,sunS2,y2);
+        }
+
+
+        if(Math.abs(sunR1-twiR1)<50){
+            const gradient2=ctx.createLinearGradient(sunR1,y,twiR1,y2);
+            gradient2.addColorStop(0,"red");
+            gradient2.addColorStop(1,"rgba(100,0,0,0)");
+            this.poly(gradient2,ctx,sunR1,y,twiR1,y,twiR2,y2,sunR2,y2);
+        }
+    }
+
+    graphOther(){
+        const ctx=this.ctx;
+        const data=this.data;
+
+        ctx.beginPath();
+        ctx.strokeStyle="green";
+        ctx.lineWidth=1;
+        let lastX=this.getX(this.hourToHour(data[0].other[1]));
+        ctx.moveTo(lastX,this.getY(1));
+        for(let i=1;i<data.length-1;i++){
+            const d=data[i];
+            const dn=data[i+1];
+
+            const x=this.getX(this.hourToHour(dn.other[1],d.tz));
+            if(Math.abs(x-lastX)>50){
+                ctx.moveTo(x,this.getY(i));
+            } else {
+                ctx.lineTo(x,this.getY(i));
+            }
+            lastX=x;
+
+        }
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.strokeStyle="blue";
+        ctx.lineWidth=1;
+        ctx.setLineDash([7,10]);
+        lastX=this.getX(this.hourToHour(data[0].other[2]));
+        ctx.moveTo(lastX,this.getY(1));
+        for(let i=1;i<data.length-1;i++){
+            const d=data[i];
+            const dn=data[i+1];
+
+            const x=this.getX(this.hourToHour(dn.other[2],d.tz));
+            if(Math.abs(x-lastX)>50){
+                ctx.moveTo(x,this.getY(i));
+            } else {
+                ctx.lineTo(x,this.getY(i));
+            }
+            lastX=x;
+
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+    }
+
+    drawGrid(){
+        const canvas=this.canvas;
+        const data=this.data;
+        const ctx = this.ctx;
+
+        ctx.beginPath();
+        ctx.strokeStyle="rgba(100,100,100,.3)";
+        ctx.lineWidth=1;
+        for(let i=0;i<24;i++){
+            ctx.moveTo(this.getX(i),0);
+            ctx.lineTo(this.getX(i),canvas.height);
+    
+        }
+
+        for(let i=0;i<data.length-2;i++){
+            ctx.moveTo(this.getX(0),this.getY(i));
+            ctx.lineTo(this.getX(24),this.getY(i));
+        }
+        ctx.stroke();
+
+        //Midnight line
+        ctx.beginPath();
+        //ctx.strokeStyle="rgba(255,0,0,.75)";
+        ctx.lineWidth=2;
+        ctx.moveTo(this.getX(12),0);
+        ctx.lineTo(this.getX(12),canvas.height);
+        ctx.stroke();
+        ctx.lineWidth=1;
+
+        //Clear box for hour labels
+        ctx.beginPath();
+        ctx.fillStyle="white";
+        ctx.fillRect(0, 0, canvas.width, this.getY(1));
+        ctx.stroke();
+
+        //Hour labels
+        ctx.fillStyle="black";
+        ctx.textAlign="left";
+        for(let i=0;i<24;i++){
+            let hour=i-12;
+            let ap="a";
+            if(hour<0){
+                ap="p";
+                hour=12+hour;
+            }
+            if(hour==0){
+                hour=12;
+            }
+
+            let text=hour+ap;
+
+            ctx.fillText(text,this.getX(i),this.getY(1)-2);
+        }
+    }
+
+    poly(color,ctx,x1,y1,x2,y2,x3,y3,x4,y4){
+        ctx.beginPath();
+        ctx.fillStyle=color;
+        ctx.moveTo(x1,y1);
+        ctx.lineTo(x2,y2);
+        ctx.lineTo(x3,y3);
+        ctx.lineTo(x4,y4);
+        ctx.closePath();
+        ctx.fill();
+
+    }
+
 }
 

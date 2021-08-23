@@ -1,0 +1,182 @@
+<html>
+<body>
+
+<div id=output></div>
+<script src="astro.js"></script>
+<script>
+
+go();
+async function go(){
+    const jpl=await loadData();
+    //testPositions(jpl);
+
+    //testRS(jpl);
+
+    RiseSetTable(jpl);
+}
+
+function RiseSetTable(jpl){
+    let jd=2459426.5 //Aug 1 2021
+
+    let data=generateRiseSetTimes(jd,60,38.2527*torad,85.7585*torad);
+
+    const t=document.createElement("table");
+    t.cellSpacing=0;
+    t.border="solid 1px";
+
+    for(let i=0;i<data.length;i++){
+        const r=t.insertRow(t.rows.length);
+        cell(r,data[i].jd);
+        cell(r,format(new Date(UnixTimeFromJulianDate(data[i].jd))));
+
+
+        cell(r,format(new Date(UnixTimeFromJulianDate(data[i].jd+data[i].moonRST[0]/24.0))));
+        cell(r,format(new Date(UnixTimeFromJulianDate(data[i].jd+data[i].moonRST[1]/24.0))));
+        cell(r,format(new Date(UnixTimeFromJulianDate(data[i].jd+data[i].moonRST[2]/24.0))));
+
+        cell(r,Math.floor(data[i].moonRST[0]*100)/100);
+        cell(r,Math.floor(data[i].moonRST[1]*100)/100);
+        cell(r,Math.floor(data[i].moonRST[2]*100)/100);
+
+        cell(r,data[i].moonRST[3]);
+
+    }
+
+    document.getElementById("output").appendChild(t);
+}
+
+function toStr(d){
+    let t=d+"";
+    if(d<10)t="0"+t;
+    return t;
+}
+
+function format(d){
+    let t="";
+    t+=toStr(d.getMonth()+1)+"-"+toStr(d.getDate());
+    t+=" "+toStr(d.getHours())+":"+toStr(d.getMinutes());
+
+
+    return t;
+}
+
+function cell(r,d){
+    const c=r.insertCell(r.cells.length);
+    c.innerHTML=d;
+}
+
+function generateRiseSetTimes(startJD,count,lat,lon){
+
+    const data=new Array();
+    for(let i=0;i<count;i++){
+        let jd=startJD+i;
+        const t={};
+
+        t.jd=jd;
+        t.moon=getGeocentricMoonPos(jd);
+        t.moonRST=getRiseSet(jd,lat,lon,t.moon[0],t.moon[1],0.125);
+        const moonR=getGeocentricMoonPos(jd+t.moonRST[1]/24.0);
+        t.moonRST[1]=getRiseSet(jd,lat,lon,moonR[0],moonR[1],0.125)[1];
+        const moonS=getGeocentricMoonPos(jd+t.moonRST[2]/24.0);
+        t.moonRST[2]=getRiseSet(jd,lat,lon,moonS[0],moonS[1],0.125)[2];
+        data[i]=t;
+    }
+    return data;
+}
+
+
+function testRS(jpl){
+
+    let max=0;
+    let maxJD=0;
+    for(let i=0;i<jpl.length;i++){
+        let r=jpl[i];
+        const pos=getGeocentricMoonPos(jpl[i].jd);
+        const m=getRiseSet(r.jd,38.2527*torad,85.7585*torad,pos[0],pos[1],0.125);
+        //const m=getRiseSet(r.jd,38.2527*torad,85.7585*torad,r.ra2000*torad,r.dec2000*torad,0.125);
+        let v=m[1];
+        if(r.event=="s")v=m[2];
+        if(r.event=="t")v=m[0];
+
+        const time=parseTime(r.time);
+
+        let d=Math.abs(v-time);
+        if(d>12)d=24-d;
+
+        if(d>max){
+            max=d;
+            maxJD=r.jd;
+        }
+    }
+    console.log(max*60);
+}
+
+function parseTime(t){
+    const hours=t.substr(0,2)-0;
+    const min=t.substr(3,2)-0;
+    const sec=t.substr(6,2)-0;
+
+    return hours+min/60.0+sec/60.0/60.0;
+}
+
+function testPositions(jpl){
+    let max=0;
+    for(let i=0;i<jpl.length;i++){
+        const pos=getGeocentricMoonPos(jpl[i].jd);
+        const mra=pos[0]*180/Math.PI;
+        const mdec=pos[1]*180/Math.PI
+        
+        let dra=Math.abs(jpl[i].ra2000-mra);
+        let ddec=Math.abs(jpl[i].dec2000-mdec);
+        if(dra>180)dra=360-dra;
+        if(ddec>180)ddec=360-ddec;
+
+        if(dra>max)max=dra;
+        if(ddec>max)max=ddec;
+    }
+    console.log(max);
+}
+
+async function loadData(){
+    const jpl=await fetchData("test data-edit.txt");
+    const lines=jpl.split(/\r*\n/);
+    const data=new Array();
+    
+    for(let i=0;i<lines.length;i++){
+        const d=lines[i].split(/ +/);
+
+        const r={};
+        r.orig=lines[i];
+        r.date=d[1];
+        r.time=d[2];
+        r.jd=d[3];
+        r.event=d[4];
+        r.ra2000=d[5];
+        r.dec2000=d[6];
+        r.raApp=d[7];
+        r.decApp=d[8];
+        r.az=d[9];
+        r.el=d[10];
+        r.sideReal=d[11];
+        r.illuminationPercent=d[12];
+        r.deltaT=d[13];
+
+        r.event=r.event.replace(/\*/,"");
+        r.event=r.event.replace(/N/,"");
+        r.event=r.event.replace(/A/,"");
+        r.event=r.event.replace(/C/,"");
+
+        data[i]=r;
+    }
+    return data;
+}
+
+async function fetchData(url) {
+    const response = await fetch(url);
+    const data = await response.text();
+    return data;
+}
+
+</script>
+</body>
+</html>
