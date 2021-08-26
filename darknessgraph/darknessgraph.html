@@ -1,117 +1,234 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<title>Darkness Graph</title>
+<title>Astronomical Rise and Set Calendar</title>
 <link rel="stylesheet" href="../default.css">
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
+    .objectList{
+        display: inline-block;
+    }
+    .objectListsContainer{
+        padding:20px;
+        display: inline-block;
+        background-color:#ddd;
+        border-radius: 20px;
+    }
+    input[type="text"],input[type="button"], input[type="date"],select {
+        padding: 10px;
+        border-radius: 3px;
+    }
+    .formLabel{
+        position: relative;
+        margin-top: 2em;
+        display: block;
+    }
+    .formText{
+        position:absolute;
+        transform: translateY(-90%);
+    }
 </style>
 </head>    
 <body>
-<h1>Darkness Graph</h1>
+<h1>Astronomical Rise and Set Calendar</h1>
 <h3>Sunrise, Sunset, Moonrise, Moonset, Twlight, Moon Illumination</h3>
 <p>Computations valid for 1950-2050.</p>
-<p style="background-color: red; color:white; font-weight: bold;">Alpha Application:  Still under testing.</p>
+<p style="background-color: red; color:white; font-weight: bold;">Alpha Application:  Still under testing.  Not all features are functional.</p>
 <form>
-    <table>
-        <tr><td align=right>Start Date:</td><td><input type=date id="startDate"></td><td><input type=button value="Today" onclick='setDateToNow();'></td></tr>
-        <tr><td align=right>Lattitude:</td><td><input type=text id="lat"></td><td><input type=button value="Get Location" onclick='getUserPosition();'><td></tr>
-        <tr><td align=right>Longitude:</td><td><input type=text id="lon"></td></tr>
-        <tr><td align=right>Days:</td><td><input type=text id="days" value="90"></td></tr>
-        <tr><td align=right>Time Zone:</td><td><select id="timeZoneSelect"><option>EDT</option></select></td></tr>
+    <label class="formLabel">
+        <label class="formText" for="startDate">Start Date</label>
+        <input type=date id="startDate">
+        <input type=button id="nowButton" value="Today">
+    </label>
 
-        <tr><td></td><td><input type=button value="Compute" onclick="generateGraph();"></td></tr>
-    </table>
-    <div style="background-color:#ddd">Constellations:<div id="constellationList"></div></div>
+    <label class="formLabel">
+        <label class="formText">Days</label>
+        <input type=text id="days" value="365">
+    </label>
+
+    <label class="formLabel">
+        <label class="formText">Lattitude</label>
+        <input type=text id="lat">
+        <label class="formText">Longitude</label>
+        <input type=text id="lon">
+        <input type=button id="locationButton" value="Get Location">
+    </label>
+    <label class="formLabel">
+        <label class="formText">Time Zone</label>
+        <select id="timeZoneSelect"></select>
+    </label>
+    <br>
+    <span class="objectListsContainer">
+        <span class="objectList" id="constellationList">Constellations:<br><select id="constellationsSelection" size=10 multiple></select></span>
+        <span class="objectList" id="messierList">Messier:<br><select id="messierSelection" size=10 multiple></select></span>
+        <span class="objectList" id="planetList">Planets:<br><select id="planetSelection" size=10 multiple></select></span>
+    </span>
+    <br>
+    <input type="range" id='zoomHeight' min=1 max=200 value=110><label for="zoomHeight">Zoom Height</label><br>
+    <input type="range" id='zoomWidth' min=1 max=1000 value=200><label for="zoomWidth">Zoom Width</label><br>
+    <input type="range" id='zoomLabel' min=1 max=500 value=100><label for="zoomLabel">Text Size</label><br>
+    <input type=checkbox id='autoGenerate' checked><label for="autoGenerate">Auto Generate</label><br>
+    <input type=checkbox id='rememberSettings'><label for="rememberSettings">Remember Settings</label><br>
+    <input type=button value="Generate Graph" id="generateButton">
+    <br>
+    Solid line: set, short dash: transit, long dash: rise<br>
 </form>
     
 <!--div id="follow" style="position:absolute; background:red;">Follow</div-->
 <div id="output"></div>
-<script src="astro.js"></script>
-<script src="Graph.js"></script>
-<script>
+<script type="module">
 //Darkness graph.
 //Greg Miller (gmiller@gregmiller.net)
 //http://www.celestialprogramming.com/
 //Released as public domain
 
+import SeriesDataGenerator from './SeriesDataGenerator.js';
+import * as astro from './astro.js';
+import Graph from "./Graph.js";
+
+const planets=["Sun","Twilight","Moon","Mercury","Venus","Mars","Jupiter","Saturn","Uranus","Neptune"];
 let riseSetData;
-populatConstellations();
 
-function populatConstellations(){
-    const e=document.getElementById("constellationList");
-    const s=document.createElement("select");
-    s.id="constellationsSelection";
-    s.multiple=true;
-    s.size=10;
-    for(let i=0;i<constellations.length;i++){
+class Init{
+    static init(){
+        document.getElementById("lat").value=38.2527;
+        document.getElementById("lon").value=-85.7585;
 
-        const o=document.createElement("option");
-        o.text=constellations[i][1];
-        o.value=i;
-        s.add(o);
+        this.populateLists();
+        this.setListeners();
+
+        setDateToNow();
+        generateGraph();
     }
-    e.appendChild(s);
+
+    static setListeners(){
+        document.getElementById("nowButton").addEventListener("click",setDateToNow);
+        document.getElementById("locationButton").addEventListener("click",getUserPosition);
+        document.getElementById("startDate").addEventListener("change",dataChanged);
+        document.getElementById("lat").addEventListener("change",dataChanged);
+        document.getElementById("lon").addEventListener("change",dataChanged);
+        document.getElementById("days").addEventListener("change",dataChanged);
+        document.getElementById("timeZoneSelect").addEventListener("change",dataChanged);
+        document.getElementById("constellationsSelection").addEventListener("change",dataChanged);
+        document.getElementById("messierSelection").addEventListener("change",dataChanged);
+        document.getElementById("planetSelection").addEventListener("change",dataChanged);
+        document.getElementById("zoomHeight").addEventListener("input",dataChanged);
+        document.getElementById("zoomWidth").addEventListener("input",dataChanged);
+        document.getElementById("zoomLabel").addEventListener("input",dataChanged);
+        document.getElementById("autoGenerate").addEventListener("change",dataChanged);
+        document.getElementById("generateButton").addEventListener("click",generateGraph);
+    }
+
+    static populateLists(){
+        let l=document.getElementById("constellationsSelection");
+        for(let i=0;i<astro.constellations.length;i++){
+
+            const o=document.createElement("option");
+            o.text=astro.constellations[i][1];
+            o.value=i;
+            l.add(o);
+        }
+
+        l=document.getElementById("messierSelection");
+        
+        for(let i=0;i<astro.messier.length;i++){
+            const o=document.createElement("option");
+            o.text=astro.messier[i].id+" "+astro.messier[i].name;
+            o.value=i;
+            l.add(o);
+        }
+
+        l=document.getElementById("planetSelection");
+        for(let i=0;i<planets.length;i++){
+            const o=document.createElement("option");
+            o.text=planets[i];
+            o.value=i;
+            if(i<=4)o.selected=true;
+            l.add(o);
+        }
+
+        
+        l=document.getElementById("timeZoneSelect");
+        const tz=new Date().toLocaleDateString('en-us',{timeZoneName:'short'}).split(" ")[1];
+        const o=document.createElement("option");
+        o.text="System ("+tz+")";
+        o.selected=true;
+        l.add(o);
+        for(let i=0;i<24;i++){
+            const o=document.createElement("option");
+            o.text="UTC +"+(i-12);
+            o.value=(i-12);
+            if(i<12){
+                o.text="UTC "+(i-12);
+            }
+            if(i-12==-5)o.selected=true;
+            l.add(o);
+        }
+    }
 }
+
+function dataChanged(e){
+    if(document.getElementById("autoGenerate").checked==true){
+        generateGraph();
+    }
+}
+
 
 function generateGraph(){
     document.getElementById("output").innerHTML="";
     const d=new Date(document.getElementById("startDate").value);
-    const jd=Math.floor(JulianDateFromUnixTime(d.getTime()))-.5;
+    const jd=Math.floor(astro.JulianDateFromUnixTime(d.getTime()))-.5;
 
-    const lat=(document.getElementById("lat").value-0)*torad;
-    const lon=(document.getElementById("lon").value-0)*torad;
+    const lat=(document.getElementById("lat").value-0)*Math.PI/180;
+    const lon=(document.getElementById("lon").value-0)*Math.PI/180;
     const days=(document.getElementById("days").value-0);
 
-    riseSetData=generateRiseSetTimes(jd,days,lat,lon);
+    const constellations=getSelectedIndexes(document.getElementById("constellationsSelection"));
+    const messier=getSelectedIndexes(document.getElementById("messierSelection"));
+    const planets=getSelectedIndexes(document.getElementById("planetSelection"));
 
-    new Graph(riseSetData);
+    const p=document.getElementById("planetSelection");
+
+    const zoomHeight=(document.getElementById("zoomHeight").value-0)/10.0;
+    const zoomWidth=(document.getElementById("zoomWidth").value-0)/10.0;
+    const fontSize=(document.getElementById("zoomLabel").value-0)/10.0;
+    const tzSelect=document.getElementById("timeZoneSelect");
+
+    riseSetData=SeriesDataGenerator.generateRiseSetTimes(jd,days,lat,lon,constellations,messier,planets);
+
+    const graph=new Graph(riseSetData);
+    graph.lineHeight=zoomHeight;
+    graph.cellWidth=zoomWidth;
+    graph.fontSize=fontSize;
+    graph.showSun=p.options[0].selected;
+    graph.showTwilight=p.options[1].selected;
+    graph.showMoon=p.options[2].selected;
+
+    if(tzSelect.selectedIndex!=0){
+        graph.tzOverride=-(tzSelect.options[tzSelect.selectedIndex].value-0);
+    }
+
+    graph.display();
+
 }
 
-function generateRiseSetTimes(startJD,count,lat,lon){
-
-    const data=new Array();
-    for(let i=0;i<count;i++){
-        let jd=startJD+i;
-        const t={};
-        t.jd=jd;
-        t.sun=sunPosition(jd);
-
-        t.sunRST=getRiseSet(jd,lat,lon,t.sun[0],t.sun[1],-0.8333);
-        t.civilTwilightRST=getRiseSet(jd,lat,lon,t.sun[0],t.sun[1],-6.0);
-        t.astroTwilightRST=getRiseSet(jd,lat,lon,t.sun[0],t.sun[1],-18.0);
-
-        t.moon=getGeocentricMoonPos(jd);
-        t.moonRST=getRiseSet(jd,lat,lon,t.moon[0],t.moon[1],0.125);
-        /*
-        TODO: recompute moon RST for actual rise and set time position
-        const moonR=getGeocentricMoonPos(jd+t.moonRST[1]/24.0);
-        t.moonRST[1]=getRiseSet(jd,lat,lon,moonR[0],moonR[1],0.125)[1];
-        const moonS=getGeocentricMoonPos(jd+t.moonRST[2]/24.0);
-        t.moonRST[2]=getRiseSet(jd,lat,lon,moonS[0],moonS[1],0.125)[2];
-        */
-
-        t.other=getRiseSet(jd,lat,lon,constellations[25][2]*15*torad,constellations[25][3]*torad,0);
-
-        t.moonIllunination=getIlluminatedFractionOfMoon(jd);
-        t.date=new Date(UnixTimeFromJulianDate(jd));
-        t.tz=t.date.getTimezoneOffset()/60.0;
-
-        data[i]=t;
+function getSelectedIndexes(select){
+    const s=new Array();
+    for(let i=0;i<select.options.length;i++){
+        if(select.options[i].selected==true){
+            s.push(select.options[i].value-0);
+        }
     }
-    return data;
+    return s;
 }
 
 function init(){
-	setDateToNow();
-
-	document.getElementById("lat").value=38.2527;
-	document.getElementById("lon").value=-85.7585;
-
-    generateGraph();
 }
 
 function getUserPosition(){
-	navigator.geolocation.getCurrentPosition(showPosition);
+    navigator.geolocation.getCurrentPosition(showPosition);
+    document.getElementById("timeZoneSelect").selectedIndex=0;
+    dataChanged();
 }
 
 function showPosition(p){
@@ -121,9 +238,22 @@ function showPosition(p){
 
 function setDateToNow(){
     document.getElementById("startDate").valueAsDate=new Date();
+    dataChanged();
 }
 
-init();
+Init.init();
 </script>
+<ul>
+    <li>TODO:</li>
+    <li>Label each line</li>
+    <li>Save settings</li>
+    <li>Auto zoom on load</li>
+    <li>Detailed rise/set/phase on hover/click</li>
+    <li>When height too small, one grid line at begining of month</li>
+    <li>Blank spot at bottom</li>
+    <li>Recompute moon position at rise/set times</li>
+    <li>Don't regenerate data for zoom changes</li>
+</ul>
+
 </body>
 </html>

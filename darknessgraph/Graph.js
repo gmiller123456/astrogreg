@@ -1,22 +1,29 @@
-class Graph{
+import * as svg from "./SVGHelper.js";
+
+export default class Graph{
 
     constructor (data){
         this.lineHeight=11;
+        this.fontSize=10;
         this.cellWidth=20;
-        this.xoffset=10*6;
-        this.yoffset=10;
+        this.lineWidth=2;
+        this.tzOverride=false;
+        this.showSun=true;
+        this.showMoon=true;
+        this.showTwilight=true;
 
         this.data=data;
-        this.displayData(data);
 
+    }
+
+    display(){
+        this.xoffset=this.fontSize*6;
+        this.yoffset=this.fontSize;
+        this.maxDev=this.cellWidth*3;
+
+        this.displayData(this.data);
     }
     
-    graphPopup(e){
-        //const f=document.getElementById("follow");
-        //f.style.left=e.pageX+20+"px";
-        //f.style.top=e.pageY-20+"px";
-    }
-
     getX(hour){
         const t=this.cellWidth*hour+this.xoffset;
         return t;
@@ -27,6 +34,9 @@ class Graph{
     }
 
     hourToHour(hour,tz){
+        if(this.tzOverride!=false){
+            tz=this.tzOverride;
+        }
         let h=hour-tz-12;
         while(h<0)h+=24;
         while(h>24)h-=24;
@@ -52,7 +62,7 @@ class Graph{
         const ctx=this.ctx;
 
         canvas.width=this.getX(24);
-        canvas.height=this.getY(this.data.length-1);
+        canvas.height=this.getY(this.data.length-2);
 
         ctx.beginPath();
         ctx.fillStyle="#225";
@@ -63,6 +73,8 @@ class Graph{
         ctx.fillStyle="white";
         ctx.fillRect(this.getX(24),0,this.getX(24)+(10*6*2),canvas.height);
         ctx.fill();
+        
+        ctx.imageSmoothingEnabled = true;
 
         return canvas;
     }
@@ -86,18 +98,22 @@ class Graph{
 
     drawDateLabel(date,i){
         const formattedDate=(date.getYear()+1900)+"-"+(date.getMonth()+1)+"-"+date.getDate();
-        this.ctx.font="10px sans-serif";
+        this.ctx.font=this.fontSize+"px sans-serif";
         this.ctx.fillStyle="rgb(150,150,150)";
         if(date.getDate()==1){
-            this.ctx.font="bold 10px sans-serif";
+            this.ctx.font="bold "+this.fontSize+"px sans-serif";
             this.ctx.fillStyle="rgb(0,0,0)";
         }
 
-        this.ctx.textAlign="right";
-        this.ctx.fillText(formattedDate,this.xoffset-5,this.getY(i)); //Bold first of each month
+        if(date.getDate()==1 || this.lineHeight>this.fontSize){
+            this.ctx.textAlign="right";
+            this.ctx.fillText(formattedDate,this.xoffset-5,this.getY(i));
+        }
     }
 
     drawMoon(d,dn,i){
+        if(!this.showMoon)return;
+
         const ctx=this.ctx;
         const x0=this.getX(0);
         const x24=this.getX(24)
@@ -110,11 +126,11 @@ class Graph{
         let moonS2=this.getX(this.hourToHour(dn.moonRST[2],dn.tz));
 
         //const moonColor="rgba(255,255,255,.5)";
-        const moonColor="rgba(255,255,255,"+d.moonIllunination/2.0+")";
-        if(moonR1>moonS1 && Math.abs(moonR1-moonR2)>50){
+        const moonColor="rgba(255,255,255,"+d.moonIllunination/4.0+")";
+        if(moonR1>moonS1 && Math.abs(moonR1-moonR2)>this.maxDev){
             this.poly(moonColor,ctx,x0,y,moonS1,y,moonS2,y2,moonR2,y2);
         } else if(moonR1<moonS1){
-            if(Math.abs(moonS1-moonS2)>50){
+            if(Math.abs(moonS1-moonS2)>this.maxDev){
                 moonS2=x24;
             }
             this.poly(moonColor,ctx,moonR1,y,moonS1,y,moonS2,y2,moonR2,y2);
@@ -141,37 +157,41 @@ class Graph{
         const twiR2=this.getX(this.hourToHour(dn.astroTwilightRST[1],dn.tz));
         const twiS2=this.getX(this.hourToHour(dn.astroTwilightRST[2],dn.tz));
 
-        const sunColor="rgb(175,175,0)";
+        //const sunColor="rgb(175,175,0)";
+        const sunColor="rgb(100,100,200)";
 
         if(d.sunRST[3]<=-1){
             //TODO: artic circle
             //never up
             //>=1 always up
         }
-        if(Math.abs(sunR1-sunR2)>50){
-            this.poly(sunColor,ctx,x0,y,sunS1,y,sunS2,y2,x0,y2);
-        }else if(Math.abs(sunS1-sunS2)>50){
-            this.poly(sunColor,ctx,sunR1,y,x24,y,x24,y2,sunR2,y2);
-        } else if (sunS1<sunR1) {
-            this.poly(sunColor,ctx,x0,y,sunS1,y,sunS2,y2,x0,y2);
-            this.poly(sunColor,ctx,x24,y,sunR1,y,sunR2,y2,x24,y2);
-        } else {
-            this.poly(sunColor,ctx,sunR1,y,sunS1,y,sunS2,y2,sunR2,y2)
+        if(this.showSun){
+            if(Math.abs(sunR1-sunR2)>this.maxDev){
+                this.poly(sunColor,ctx,x0,y,sunS1,y,sunS2,y2,x0,y2);
+            }else if(Math.abs(sunS1-sunS2)>this.maxDev){
+                this.poly(sunColor,ctx,sunR1,y,x24,y,x24,y2,sunR2,y2);
+            } else if (sunS1<sunR1) {
+                this.poly(sunColor,ctx,x0,y,sunS1,y,sunS2,y2,x0,y2);
+                this.poly(sunColor,ctx,x24,y,sunR1,y,sunR2,y2,x24,y2);
+            } else {
+                this.poly(sunColor,ctx,sunR1,y,sunS1,y,sunS2,y2,sunR2,y2)
+            }
         }
         
-        if(Math.abs(sunS1-twiS1)<50){
-            const gradient1=ctx.createLinearGradient(sunS1,y,twiS1,y2);
-            gradient1.addColorStop(0,"red");
-            gradient1.addColorStop(1,"rgba(100,0,0,0)");
-            this.poly(gradient1,ctx,sunS1,y,twiS1,y,twiS2,y2,sunS2,y2);
-        }
+        if(this.showTwilight){
+            if(Math.abs(sunS1-twiS1)<this.maxDev){
+                const gradient1=ctx.createLinearGradient(sunS1,y,twiS1,y2);
+                gradient1.addColorStop(0,"red");
+                gradient1.addColorStop(1,"rgba(50,0,0,0)");
+                this.poly(gradient1,ctx,sunS1,y,twiS1,y,twiS2,y2,sunS2,y2);
+            }
 
-
-        if(Math.abs(sunR1-twiR1)<50){
-            const gradient2=ctx.createLinearGradient(sunR1,y,twiR1,y2);
-            gradient2.addColorStop(0,"red");
-            gradient2.addColorStop(1,"rgba(100,0,0,0)");
-            this.poly(gradient2,ctx,sunR1,y,twiR1,y,twiR2,y2,sunR2,y2);
+            if(Math.abs(sunR1-twiR1)<this.maxDev){
+                const gradient2=ctx.createLinearGradient(sunR1,y,twiR1,y2);
+                gradient2.addColorStop(0,"red");
+                gradient2.addColorStop(1,"rgba(50,0,0,0)");
+                this.poly(gradient2,ctx,sunR1,y,twiR1,y,twiR2,y2,sunR2,y2);
+            }
         }
     }
 
@@ -179,48 +199,40 @@ class Graph{
         const ctx=this.ctx;
         const data=this.data;
 
-        ctx.beginPath();
-        ctx.strokeStyle="green";
-        ctx.lineWidth=1;
-        let lastX=this.getX(this.hourToHour(data[0].other[1]));
-        ctx.moveTo(lastX,this.getY(1));
-        for(let i=1;i<data.length-1;i++){
-            const d=data[i];
-            const dn=data[i+1];
+        ctx.lineWidth=this.lineWidth;
+        for(let j=0;j<data[0].other.length;j++){
+            const hue=((j+1)*61)%360;
+            const saturation="75";
+            ctx.strokeStyle="hsl("+hue+","+saturation+"%,50%)";
+            ctx.setLineDash([7,10]);
+            this.drawPath(j,1);
 
-            const x=this.getX(this.hourToHour(dn.other[1],d.tz));
-            if(Math.abs(x-lastX)>50){
-                ctx.moveTo(x,this.getY(i));
-            } else {
-                ctx.lineTo(x,this.getY(i));
-            }
-            lastX=x;
+            ctx.setLineDash([]);
+            this.drawPath(j,2);
 
+            ctx.setLineDash([3,3]);
+            this.drawPath(j,0);
         }
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.strokeStyle="blue";
-        ctx.lineWidth=1;
-        ctx.setLineDash([7,10]);
-        lastX=this.getX(this.hourToHour(data[0].other[2]));
-        ctx.moveTo(lastX,this.getY(1));
-        for(let i=1;i<data.length-1;i++){
-            const d=data[i];
-            const dn=data[i+1];
-
-            const x=this.getX(this.hourToHour(dn.other[2],d.tz));
-            if(Math.abs(x-lastX)>50){
-                ctx.moveTo(x,this.getY(i));
-            } else {
-                ctx.lineTo(x,this.getY(i));
-            }
-            lastX=x;
-
-        }
-        ctx.stroke();
         ctx.setLineDash([]);
+    }
 
+    drawPath(j,v){
+        this.ctx.beginPath();
+        let lastX=this.getX(this.hourToHour(this.data[0].other[j][v]));
+        this.ctx.moveTo(lastX,this.getY(1));
+        for(let i=1;i<this.data.length-1;i++){
+            const d=this.data[i];
+            const dn=this.data[i+1];
+
+            const x=this.getX(this.hourToHour(dn.other[j][v],d.tz));
+            if(Math.abs(x-lastX)>this.maxDev){
+                this.ctx.moveTo(x,this.getY(i));
+            } else {
+                this.ctx.lineTo(x,this.getY(i));
+            }
+            lastX=x;
+        }
+        this.ctx.stroke();
     }
 
     drawGrid(){
@@ -231,21 +243,24 @@ class Graph{
         ctx.beginPath();
         ctx.strokeStyle="rgba(100,100,100,.3)";
         ctx.lineWidth=1;
+        //Hours
         for(let i=0;i<24;i++){
             ctx.moveTo(this.getX(i),0);
             ctx.lineTo(this.getX(i),canvas.height);
     
         }
 
-        for(let i=0;i<data.length-2;i++){
-            ctx.moveTo(this.getX(0),this.getY(i));
-            ctx.lineTo(this.getX(24),this.getY(i));
+        //Days
+        if(this.lineHeight>3){
+            for(let i=0;i<data.length-2;i++){
+                ctx.moveTo(this.getX(0),this.getY(i));
+                ctx.lineTo(this.getX(24),this.getY(i));
+            }
         }
         ctx.stroke();
 
         //Midnight line
         ctx.beginPath();
-        //ctx.strokeStyle="rgba(255,0,0,.75)";
         ctx.lineWidth=2;
         ctx.moveTo(this.getX(12),0);
         ctx.lineTo(this.getX(12),canvas.height);
@@ -274,7 +289,9 @@ class Graph{
 
             let text=hour+ap;
 
-            ctx.fillText(text,this.getX(i),this.getY(1)-2);
+            if(this.cellWidth>this.fontSize*1.5 || hour%2==0){
+                ctx.fillText(text,this.getX(i),this.getY(1)-2);
+            }
         }
     }
 
