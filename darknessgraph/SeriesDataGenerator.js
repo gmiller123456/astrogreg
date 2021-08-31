@@ -3,6 +3,8 @@ import vsop87a from "./vsop87a_small.js";
 
 const torad=Math.PI/180.0;
 
+const planets=["Sun","Twilight","Moon","Mercury","Venus","Mars","Jupiter","Saturn","Uranus","Neptune"];
+
 export default class SeriesDataGenerator {
     static generateRiseSetTimes(startJD,count,lat,lon,selectedConstellations, selectedMessier, selectedPlanets){
 
@@ -34,11 +36,15 @@ export default class SeriesDataGenerator {
     
             t.other=new Array();
             for(let i=0;i<selectedConstellations.length;i++){
-                t.other[i]=astro.getRiseSet(jd,lat,lon,astro.constellations[selectedConstellations[i]][2]*15*torad,astro.constellations[selectedConstellations[i]][3]*torad,0);
+                t.other[i]={};
+                t.other[i].name=astro.constellations[selectedConstellations[i]][1];
+                t.other[i].data=astro.getRiseSet(jd,lat,lon,astro.constellations[selectedConstellations[i]][2]*15*torad,astro.constellations[selectedConstellations[i]][3]*torad,0);
             }
     
             for(let i=0;i<selectedMessier.length;i++){
-                t.other[i+selectedConstellations.length]=astro.getRiseSet(jd,lat,lon,astro.messier[selectedMessier[i]].ra*15*torad,astro.messier[selectedMessier[i]].dec*torad,0);
+                t.other[i+selectedConstellations.length]={};
+                t.other[i+selectedConstellations.length].name=astro.messier[selectedMessier[i]].id;
+                t.other[i+selectedConstellations.length].data=astro.getRiseSet(jd,lat,lon,astro.messier[selectedMessier[i]].ra*15*torad,astro.messier[selectedMessier[i]].dec*torad,0);
             }
 
             for(let i=0;i<selectedPlanets.length;i++){
@@ -49,7 +55,9 @@ export default class SeriesDataGenerator {
                     const geocentric=this.sub(heliocentric,earth);
                     const radec=astro.xyzToRaDec(geocentric);
                     const rst=astro.getRiseSet(jd,lat,lon,radec[0],radec[1],0);
-                    t.other[i-3+selectedConstellations.length+selectedMessier.length]=rst;
+                    t.other[i-3+selectedConstellations.length+selectedMessier.length]={};
+                    t.other[i-3+selectedConstellations.length+selectedMessier.length].name=planets[i];
+                    t.other[i-3+selectedConstellations.length+selectedMessier.length].data=rst;
                 }
             }
     

@@ -70,9 +70,8 @@
     <input type=checkbox id='autoGenerate' checked><label for="autoGenerate">Auto Generate</label><br>
     <input type=checkbox id='rememberSettings'><label for="rememberSettings">Remember Settings</label><br>
     <input type=button value="Generate Graph" id="generateButton">
-    <br>
-    Solid line: set, short dash: transit, long dash: rise<br>
 </form>
+<br>
     
 <!--div id="follow" style="position:absolute; background:red;">Follow</div-->
 <div id="output"></div>
@@ -84,7 +83,7 @@
 
 import SeriesDataGenerator from './SeriesDataGenerator.js';
 import * as astro from './astro.js';
-import Graph from "./Graph.js";
+import Graph from "./GraphSVG.js";
 
 const planets=["Sun","Twilight","Moon","Mercury","Venus","Mars","Jupiter","Saturn","Uranus","Neptune"];
 let riseSetData;
@@ -245,7 +244,8 @@ Init.init();
 </script>
 <ul>
     <li>TODO:</li>
-    <li>Label each line</li>
+    <li>Some labels scrolling off end</li>
+    <li>Venus, Mercury disappear if sun, moon, or twilight deselected</li>
     <li>Save settings</li>
     <li>Auto zoom on load</li>
     <li>Detailed rise/set/phase on hover/click</li>

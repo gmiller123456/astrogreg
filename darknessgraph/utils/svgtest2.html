@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title></title>
+<link rel="stylesheet" href="default.css">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+</style>
+</head>    
+<body>
+    <div id="output" style="width:500px; height:500px; border: solid 1px;"></div>
+
+<script type="module">
+import SVG from "../SVGHelper.js";
+
+const namespace="http://www.w3.org/2000/svg";
+
+const svg=SVG.createSVG();
+
+var newRect = document.createElementNS(namespace, "rect");
+newRect.setAttribute("x", 5);
+newRect.setAttribute("y", 5);
+newRect.setAttribute("width", 500);
+newRect.setAttribute("height", 500);
+newRect.setAttribute("fill", "#5cceee");
+
+
+svg.appendChild(newRect);
+
+
+var path = document.createElementNS(namespace, "path");
+path.setAttribute("d","M 100 100 L 0 0");
+path.setAttribute("stroke","green");
+
+svg.appendChild(path);
+document.getElementById("output").appendChild(svg);
+
+svg.appendChild(SVG.text(0,5,"","#000","THis is a test"));
+
+
+document.body.appendChild(svg);
+
+console.log(svg);
+svg.setAttribute("width",150);
+
+</script>
+<script type="module">
+import SVG from "../SVGHelper.js";
+
+var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+var svg=SVG.createSVG();
+
+var svgNS = svg.namespaceURI;
+console.log(svgNS);
+var rect = document.createElementNS(svgNS,'rect');
+rect.setAttribute('x',5);
+rect.setAttribute('y',5);
+rect.setAttribute('width',500);
+rect.setAttribute('height',500);
+rect.setAttribute('fill','#95B3D7');
+svg.appendChild(rect);
+document.body.appendChild(svg);
+
+</script>
+</body>
+</html>

@@ -54,7 +54,7 @@ export default class Graph{
         return hours+":"+min;
     }
 
-    initCanvas(){
+    initImage(){
         const canvas=document.createElement("CANVAS");
         this.canvas=canvas;
         canvas.addEventListener("mousemove",this.graphPopup);
@@ -80,7 +80,7 @@ export default class Graph{
     }
 
     displayData(data){
-        const canvas=this.initCanvas();
+        const canvas=this.initImage();
 
         for(let i=0;i<data.length-2;i++){
             const d=data[i];
@@ -126,7 +126,7 @@ export default class Graph{
         let moonS2=this.getX(this.hourToHour(dn.moonRST[2],dn.tz));
 
         //const moonColor="rgba(255,255,255,.5)";
-        const moonColor="rgba(255,255,255,"+d.moonIllunination/4.0+")";
+        const moonColor="rgba(255,255,255,"+(d.moonIllunination/4.0+.05)+")";
         if(moonR1>moonS1 && Math.abs(moonR1-moonR2)>this.maxDev){
             this.poly(moonColor,ctx,x0,y,moonS1,y,moonS2,y2,moonR2,y2);
         } else if(moonR1<moonS1){
