@@ -27,12 +27,14 @@
         position:absolute;
         transform: translateY(-90%);
     }
+    .RSTcheckbox{
+        margin-left: 20px;
+    }
 </style>
 </head>    
 <body>
 <h1>Astronomical Rise and Set Calendar</h1>
 <h3>Sunrise, Sunset, Moonrise, Moonset, Twlight, Moon Illumination</h3>
-<p>Computations valid for 1950-2050.</p>
 <p style="background-color: red; color:white; font-weight: bold;">Alpha Application:  Still under testing.  Not all features are functional.</p>
 <form>
     <label class="formLabel">
@@ -59,6 +61,13 @@
     </label>
     <br>
     <span class="objectListsContainer">
+        <span style="display: block;">
+            <center>
+                <span class="RSTcheckbox"><label for="riseCheckbox">Rise</label><input type=checkbox id="riseCheckbox" checked></span>
+                <span class="RSTcheckbox"><label for="transitCheckbox">Transit</label><input type=checkbox id="transitCheckbox" checked></span>
+                <span class="RSTcheckbox"><label for="setCheckbox">Set</label><input type=checkbox id="setCheckbox" checked></span>
+            </center>
+        </span>
         <span class="objectList" id="constellationList">Constellations:<br><select id="constellationsSelection" size=10 multiple></select></span>
         <span class="objectList" id="messierList">Messier:<br><select id="messierSelection" size=10 multiple></select></span>
         <span class="objectList" id="planetList">Planets:<br><select id="planetSelection" size=10 multiple></select></span>
@@ -74,7 +83,7 @@
 <br>
     
 <!--div id="follow" style="position:absolute; background:red;">Follow</div-->
-<div id="output"></div>
+<img id="output" style="--transform: rotate(-90deg);" />
 <script type="module">
 //Darkness graph.
 //Greg Miller (gmiller@gregmiller.net)
@@ -97,7 +106,6 @@ class Init{
         this.setListeners();
 
         setDateToNow();
-        generateGraph();
     }
 
     static setListeners(){
@@ -116,6 +124,9 @@ class Init{
         document.getElementById("zoomLabel").addEventListener("input",dataChanged);
         document.getElementById("autoGenerate").addEventListener("change",dataChanged);
         document.getElementById("generateButton").addEventListener("click",generateGraph);
+        document.getElementById("riseCheckbox").addEventListener("click",generateGraph);
+        document.getElementById("setCheckbox").addEventListener("click",generateGraph);
+        document.getElementById("transitCheckbox").addEventListener("click",generateGraph);
     }
 
     static populateLists(){
@@ -176,7 +187,7 @@ function dataChanged(e){
 function generateGraph(){
     document.getElementById("output").innerHTML="";
     const d=new Date(document.getElementById("startDate").value);
-    const jd=Math.floor(astro.JulianDateFromUnixTime(d.getTime()))-.5;
+    const jd=Math.floor(astro.JulianDateFromUnixTime(d.getTime()));
 
     const lat=(document.getElementById("lat").value-0)*Math.PI/180;
     const lon=(document.getElementById("lon").value-0)*Math.PI/180;
@@ -193,7 +204,7 @@ function generateGraph(){
     const fontSize=(document.getElementById("zoomLabel").value-0)/10.0;
     const tzSelect=document.getElementById("timeZoneSelect");
 
-    riseSetData=SeriesDataGenerator.generateRiseSetTimes(jd,days,lat,lon,constellations,messier,planets);
+    riseSetData=(new SeriesDataGenerator(jd,days,lat,lon,constellations,messier,planets)).generateRiseSetTimes();
 
     const graph=new Graph(riseSetData);
     graph.lineHeight=zoomHeight;
@@ -202,12 +213,16 @@ function generateGraph(){
     graph.showSun=p.options[0].selected;
     graph.showTwilight=p.options[1].selected;
     graph.showMoon=p.options[2].selected;
+    graph.showRise=document.getElementById("riseCheckbox").checked;
+    graph.showTransit=document.getElementById("transitCheckbox").checked;
+    graph.showSet=document.getElementById("setCheckbox").checked;
 
     if(tzSelect.selectedIndex!=0){
         graph.tzOverride=-(tzSelect.options[tzSelect.selectedIndex].value-0);
     }
 
-    graph.display();
+    document.getElementById("output").src=graph.getDataURL();
+    
 
 }
 
@@ -249,10 +264,12 @@ Init.init();
     <li>Save settings</li>
     <li>Auto zoom on load</li>
     <li>Detailed rise/set/phase on hover/click</li>
-    <li>When height too small, one grid line at begining of month</li>
     <li>Blank spot at bottom</li>
     <li>Recompute moon position at rise/set times</li>
     <li>Don't regenerate data for zoom changes</li>
+    <li>Meteor showers</li>
+    <li>Moon phase images</li>
+    <li>Portrait/Landscape mode</li>
 </ul>
 
 </body>

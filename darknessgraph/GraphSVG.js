@@ -15,17 +15,16 @@ export default class Graph{
         this.data=data;
     }
 
-    display(){
+    getDataURL(){
         this.xoffset=this.fontSize*6;
         this.yoffset=this.fontSize;
         this.maxDev=this.cellWidth*3;
 
-        this.displayData(this.data);
+        return SVG.toDataURL(this.displayData(this.data));
     }
     
     getX(hour){
-        const t=this.cellWidth*hour+this.xoffset;
-        return t;
+        return this.cellWidth*hour+this.xoffset;
     }
 
     getY(i){
@@ -120,11 +119,16 @@ export default class Graph{
         this.graphOther();
         this.drawGrid();
 
-        document.getElementById("output").appendChild(this.image);
+        return this.image;
+    }
+
+    pad(n){
+        return (""+n).padStart(2,"0");
     }
 
     drawDateLabel(date,i){
-        const formattedDate=(date.getYear()+1900)+"-"+(date.getMonth()+1)+"-"+date.getDate();
+
+        const formattedDate=(date.getYear()+1900)+"-"+(this.pad(date.getMonth()+1))+"-"+this.pad(date.getDate());
 
         const t=SVG.text("#969696",this.xoffset-5,this.getY(i),this.fontSize,formattedDate);
         t.setAttribute("text-anchor","end");
@@ -145,7 +149,7 @@ export default class Graph{
         const x0=this.getX(0);
         const x24=this.getX(24)
         const y=this.getY(i);
-        const y2=this.getY(i+1)
+        const y2=this.getY(i+1);
 
         let moonR1=this.getX(this.hourToHour(d.moonRST[1],d.tz));
         let moonS1=this.getX(this.hourToHour(d.moonRST[2],d.tz));
@@ -171,7 +175,7 @@ export default class Graph{
         const x0=this.getX(0);
         const x24=this.getX(24)
         const y=this.getY(i);
-        const y2=this.getY(i+1)
+        const y2=this.getY(i+1)+1;
 
         const sunR1=this.getX(this.hourToHour(d.sunRST[1],d.tz));
         const sunS1=this.getX(this.hourToHour(d.sunRST[2],d.tz));
@@ -223,11 +227,12 @@ export default class Graph{
             const saturation="75";
             const color="hsl("+hue+","+saturation+"%,50%)";
             name="Body"+j;
-            this.drawPath(color,"rises",j,1,"7 10");
 
-            this.drawPath(color,"sets",j,2,"");
+            if(this.showRise) this.drawPath(color,"Rises",j,1,"7 10");
 
-            this.drawPath(color,"transits",j,0,"3 3");
+            if(this.showSet) this.drawPath(color,"Sets",j,2,"");
+
+            if(this.showTransit) this.drawPath(color,"Transits",j,0,"3 3");
         }
     }
 
@@ -263,6 +268,7 @@ export default class Graph{
 
         textEl.appendChild(textPath);
         textEl.setAttribute("fill",color);
+        textEl.setAttribute("font-size",this.fontSize*1.5);
         this.image.appendChild(textEl);
 
     }
@@ -270,7 +276,8 @@ export default class Graph{
     drawGrid(){
         const data=this.data;
 
-        let color="rgba(100,100,100,.3)";
+        let color="rgba(255,255,255,.1)";
+
         //Hours
         let p="";
         for(let i=0;i<24;i++){
@@ -280,7 +287,9 @@ export default class Graph{
         //Days
         if(this.lineHeight>3){
             for(let i=0;i<data.length-2;i++){
-                p+=`M ${this.getX(0)} ${this.getY(i)} L ${this.getX(24)} ${this.getY(i)}`;
+                if(this.data[i].date.getDate()==1 || this.lineHeight>this.fontSize){
+                    p+=`M ${this.getX(0)} ${this.getY(i)} L ${this.getX(24)} ${this.getY(i)}`;
+                }
             }
         }
 

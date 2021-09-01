@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset=utf-8 />
+<title>JS Bin</title>
+</head>
+<body>
+<img id="test">
+<img id="test2">
+<img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InJlZCIvPjwvc3ZnPg==" width="100" height="100" alt="diagram" />
+<script>
+    var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    var svgNS = svg.namespaceURI;
+    var rect = document.createElementNS(svgNS,'rect');
+    rect.setAttribute('x',5);
+    rect.setAttribute('y',5);
+    rect.setAttribute('width',500);
+    rect.setAttribute('height',500);
+    rect.setAttribute('fill','#95B3D7');
+    svg.appendChild(rect);
+    document.body.appendChild(svg);
+    svg.setAttribute("xmlns","http://www.w3.org/2000/svg");
+
+    console.log(svg.innerHTML);
+    console.log(svg);
+
+    const data=btoa("<svg xmlns=\"http://www.w3.org/2000/svg\">"+svg.innerHTML+"</svg>");
+    console.log(data);
+    console.log(atob(data));
+
+    document.getElementById("test2").src="data:image/svg+xml;base64,"+data;
+    document.getElementById("test").src="data:image/svg+xml;base64,PHN2ZyAgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB4PSI1IiB5PSI1IiB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwMCIgZmlsbD0iIzk1QjNENyI+PC9yZWN0Pjwvc3ZnPg==";
+</script>
+</body>
+</html>

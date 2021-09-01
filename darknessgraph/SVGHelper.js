@@ -12,6 +12,17 @@ export default class SVG{
         return document.createElementNS(ns, "svg");
     }
 
+    static toDataURL(image){
+        return "data:image/svg+xml;base64,"+btoa(this.getSVGSource(image));
+    }
+
+    static getSVGSource(image){
+        const w=image.getAttribute("width");
+        const h=image.getAttribute("height");
+
+        return "<svg width=\""+w+"\" height=\""+h+"\" xmlns=\"http://www.w3.org/2000/svg\">"+image.innerHTML+"</svg>";
+    }
+
     static createElement(element){
         return document.createElementNS(ns, element);
     }
