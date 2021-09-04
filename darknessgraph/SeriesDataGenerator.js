@@ -14,37 +14,66 @@ export default class SeriesDataGenerator {
         this.selectedConstellations=selectedConstellations;
         this.selectedMessier=selectedMessier;
         this.selectedPlanets=selectedPlanets;
+        this.data={};
     }
 
     getMoonData(){
     }
 
     getSunData(){
+        /*
         let i=0;
-        const t=new Array();
+        const sunRise=new Array();
+        const sunSet=new Array();
+        const sunTransit=new Array();
+
+        const civilTwilightStart=new Array();
+        const civilTwilightStop=new Array();
+        const naughticalTwilightStart=new Array();
+        const naughticalTwilightStop=new Array();
+        const astroTwilightStart=new Array();
+        const astroTwilightStop=new Array();
+        
         while(i<this.count){
             const jd=this.startJD+i;
 
             const sun=this.sub([0,0,0],this.data.earth[jd].vector);
             const radec=astro.xyzToRaDec(sun);
             
-            const sunRST=astro.getRiseSet(jd,this.lat,this.lon,sun[0],sun[1],-0.8333);
-            const civilTwilightRST=astro.getRiseSet(jd,this.lat,this.lon,sun[0],sun[1],-6.0);
-            const naughticalTwilightRST=astro.getRiseSet(jd,lat,lon,sun[0],sun[1],-12.0);
-            const astroTwilightRST=astro.getRiseSet(jd,lat,lon,sun[0],sun[1],-18.0);
+            const sunRST=astro.getRiseSet(jd,this.lat,this.lon,radec[0],radec[1],-0.8333);
+            const civilTwilightRST=astro.getRiseSet(jd,this.lat,this.lon,radec[0],radec[1],-6.0);
+            const naughticalTwilightRST=astro.getRiseSet(jd,lat,lon,radec[0],radec[1],-12.0);
+            const astroTwilightRST=astro.getRiseSet(jd,lat,lon,radec[0],radec[1],-18.0);
 
-            t[i]={};
-            t[i].jd=jd;
-            t[i].vector=sun;
-            t[i].ra=radec[0];
-            t[i].dec=radec[1];
-            t[i].sunRST=sunRST;
-            t[i].civilTwilightRST=civilTwilightRST;
-            t[i].naughticalTwilightRST=naughticalTwilightRST;
-            t[i].astroTwilightRST=astroTwilightRST;
+            let sunRiseTime=-1;
+            let sunSetTime=-1;
+            if(sunRST[3]>-1 && sunRST[3]<1){
+                sunRiseTime=sunRST[1];
+                sunSetTime=sunRST[2];
+                sunRise[sunRise.length]=[jd,sunRST[1]];
+                sunSet[sunSet.length]=[jd,sunRST[2]];
+            }
+            sunTransit[sunTransit.length]=[jd,sunRST[0]];
+
+            if(civilTwilightRST[3]>-1 && civilTwilightRST[3]<1){
+                civilTwilightStart[civilTwilightRST.length]=[jd,sunRiseTime,civilTwilightRST[1]];
+                civilTwilightStop[civilTwilightRST.length]=[jd,sunSetTime,civilTwilightRST[2]];
+            }
+
+            if(naughticalTwilightRST[3]>-1 && naughticalTwilightRST[3]<1){
+                naughticalTwilightStart[naughticalTwilightStop.length]=[jd,sunRiseTime,naughticalTwilightRST[1]];
+                naughticalTwilightStop[naughticalTwilightStop.length]=[jd,sunSetTime,naughticalTwilightRST[2]];
+            }
+
+            if(astroTwilightRST[3]>-1 && astroTwilightRST[3]<1){
+                astroTwilightStart[astroTwilightStart.length]=[jd,sunRiseTime,astroTwilightRST[1]];
+                astroTwilightStop[astroTwilightStart.length]=[jd,sunSetTime,astroTwilightRST[2]];
+            }
+
             i++;
         }
-        return t;
+        return ;
+        */
     }
 
     getEarthPositions(){
@@ -63,6 +92,96 @@ export default class SeriesDataGenerator {
         return t;
     }
 
+    getStaticSeries(ra,dec){
+        const body={};
+        const transit=new Array();
+        const rise=new Array();
+        const set=new Array();
+
+        for(let i=0;i<this.count;i++){
+            const jd=this.startJD+i;
+
+            const rst=astro.getRiseSet(jd,this.lat,this.lon,ra,dec,0);
+
+            transit[transit.length]=[rst[0],i];
+            if(rst[3]<=1 && rst[3]>=-1){
+                rise[rise.length]=[rst[1],i];
+                set[set.length]=[rst[2],i];
+            }
+        }
+
+        body.transit=transit;
+        body.rise=rise;
+        body.set=set;
+
+        return body;
+    }
+
+    getBodyData(){
+
+        const bodies=new Array();
+        
+        for(let i=0;i<this.selectedConstellations.length;i++){
+            const body=this.getStaticSeries(astro.constellations[this.selectedConstellations[i]][2]*15*torad,astro.constellations[this.selectedConstellations[i]][3]*torad);
+            body.name=astro.constellations[this.selectedConstellations[i]][1];
+            bodies[bodies.length]=body;
+        }
+
+        for(let i=0;i<this.selectedMessier.length;i++){
+            const body=this.getStaticSeries(astro.messier[this.selectedMessier[i]].ra*15*torad,astro.messier[this.selectedMessier[i]].dec*torad);
+            body.name=astro.messier[this.selectedMessier[i]].id;
+            bodies[bodies.length]=body;
+        }
+
+        return bodies;
+    }
+
+    getPlanetSeries(planet){
+        const body={};
+        const transit=new Array();
+        const rise=new Array();
+        const set=new Array();
+
+        for(let i=0;i<this.count;i++){
+            const jd=this.startJD+i;
+
+            const earth=this.data.earth[jd].vector;
+            const heliocentric=this.getPlanetPos(planet-0,jd);
+            const geocentric=this.sub(heliocentric,earth);
+            const radec=astro.xyzToRaDec(geocentric);
+            const rst=astro.getRiseSet(jd,this.lat,this.lon,radec[0],radec[1],0);
+
+            transit[transit.length]=[rst[0],i];
+            if(rst[3]<=1 && rst[3]>=-1){
+                rise[rise.length]=[rst[1],i];
+                set[set.length]=[rst[2],i];
+            }
+        }
+
+        body.transit=transit;
+        body.rise=rise;
+        body.set=set;
+
+        return body;
+
+    }
+
+    getPlanetData(){
+        const bodies=new Array();
+
+        for(let i=0;i<this.selectedPlanets.length;i++){
+            const planet=this.selectedPlanets[i];
+
+            if(planet!=0 && planet!=1 && planet!=2){
+
+                const body=this.getPlanetSeries(this.selectedPlanets[i]);
+                body.name=planets[this.selectedPlanets[i]];
+                bodies[bodies.length]=body;
+            }
+        }
+        return bodies;
+    }
+
 
     generateRiseSetTimes(){
 
@@ -71,6 +190,8 @@ export default class SeriesDataGenerator {
         data.earth=this.getEarthPositions();
         data.moon=this.getMoonData();
         data.sun=this.getSunData();
+        data.bodies=this.getBodyData();
+        data.bodies=data.bodies.concat(this.getPlanetData());
 
         for(let i=0;i<this.count+4;i++){
             let jd=this.startJD+i;
@@ -96,33 +217,6 @@ export default class SeriesDataGenerator {
             const moonS=getGeocentricMoonPos(jd+t.moonRST[2]/24.0);
             t.moonRST[2]=getRiseSet(jd,lat,lon,moonS[0],moonS[1],0.125)[2];
             */
-    
-            t.other=new Array();
-            for(let i=0;i<this.selectedConstellations.length;i++){
-                t.other[i]={};
-                t.other[i].name=astro.constellations[this.selectedConstellations[i]][1];
-                t.other[i].data=astro.getRiseSet(jd,this.lat,this.lon,astro.constellations[this.selectedConstellations[i]][2]*15*torad,astro.constellations[this.selectedConstellations[i]][3]*torad,0);
-            }
-    
-            for(let i=0;i<this.selectedMessier.length;i++){
-                t.other[i+this.selectedConstellations.length]={};
-                t.other[i+this.selectedConstellations.length].name=astro.messier[this.selectedMessier[i]].id;
-                t.other[i+this.selectedConstellations.length].data=astro.getRiseSet(jd,this.lat,this.lon,astro.messier[this.selectedMessier[i]].ra*15*torad,astro.messier[this.selectedMessier[i]].dec*torad,0);
-            }
-
-            for(let i=0;i<this.selectedPlanets.length;i++){
-                const planet=this.selectedPlanets[i];
-
-                if(planet!=0 && planet!=1 && planet!=2){
-                    const heliocentric=this.getPlanetPos(planet-0,jd);
-                    const geocentric=this.sub(heliocentric,earth);
-                    const radec=astro.xyzToRaDec(geocentric);
-                    const rst=astro.getRiseSet(jd,this.lat,this.lon,radec[0],radec[1],0);
-                    t.other[i-3+this.selectedConstellations.length+this.selectedMessier.length]={};
-                    t.other[i-3+this.selectedConstellations.length+this.selectedMessier.length].name=planets[i];
-                    t.other[i-3+this.selectedConstellations.length+this.selectedMessier.length].data=rst;
-                }
-            }
     
             t.moonIllunination=astro.getIlluminatedFractionOfMoon(jd);
             t.date=new Date(astro.UnixTimeFromJulianDate(jd));

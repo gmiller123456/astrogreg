@@ -219,39 +219,36 @@ export default class Graph{
     }
 
     graphOther(){
-        const i=this.image;
-        const data=this.data;
-
-        for(let j=0;j<data[0].other.length;j++){
-            const hue=((j+1)*61)%360;
+        for(let i=0;i<this.data.bodies.length;i++){
+            const body=this.data.bodies[i];
+            const hue=((i+1)*61)%360;
             const saturation="75";
             const color="hsl("+hue+","+saturation+"%,50%)";
-            name="Body"+j;
+            name="Body"+i;
 
-            if(this.showRise) this.drawPath(color,"Rises",j,1,"7 10");
-
-            if(this.showSet) this.drawPath(color,"Sets",j,2,"");
-
-            if(this.showTransit) this.drawPath(color,"Transits",j,0,"3 3");
+            if(this.showRise) this.drawPath(color,body.name+" Rises",body.rise,"7 10",i);
+            if(this.showSet) this.drawPath(color,body.name+" Sets",body.set,"",i);
+            if(this.showTransit) this.drawPath(color,body.name+" Transits",body.transit,"3 3",i);
         }
     }
 
-    drawPath(color,RST,j,v,dashes){
-        const label=this.data[0].other[j].name+" "+RST;
+    drawPath(color,label,series,dashes,labelOffset){
         let path="";
-        let lastX=this.getX(this.hourToHour(this.data[0].other[j].data[v]));
-        path+="M "+lastX+" "+this.getY(1);
-        for(let i=1;i<this.data.length-1;i++){
-            const d=this.data[i];
-            const dn=this.data[i+1];
+        let lastX=this.getX(this.hourToHour(series[0][0]));
+        let lastY=this.getY(series[0][1]);
+        path+="M "+lastX+" "+lastY;
 
-            const x=this.getX(this.hourToHour(dn.other[j].data[v],d.tz));
+        for(let i=1;i<series.length-1;i++){
+
+            const x=this.getX(this.hourToHour(series[i][0],5));
+            const y=this.getY(series[i][1]);
             if(Math.abs(x-lastX)>this.maxDev){
-                path+="M "+x+ " "+this.getY(i);
+                path+="M "+x+ " "+y;
             } else {
-                path+="L "+x+ " "+this.getY(i);
+                path+="L "+x+ " "+y;
             }
             lastX=x;
+            lastY=y;
         }
         const p=SVG.path(path,color);
         p.setAttribute("stroke-width","2");
@@ -264,13 +261,12 @@ export default class Graph{
         const textPath=SVG.createElement("textPath");
         textPath.setAttribute("href","#pathID"+label);
         textPath.textContent=label;
-        textPath.setAttribute("startOffset",this.getY(j*10)%this.height);
+        textPath.setAttribute("startOffset",this.getY(labelOffset*10)%this.height);
 
         textEl.appendChild(textPath);
         textEl.setAttribute("fill",color);
         textEl.setAttribute("font-size",this.fontSize*1.5);
         this.image.appendChild(textEl);
-
     }
 
     drawGrid(){

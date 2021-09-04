@@ -136,6 +136,7 @@ class Init{
             const o=document.createElement("option");
             o.text=astro.constellations[i][1];
             o.value=i;
+            if(i==0) o.selected=true;
             l.add(o);
         }
 
@@ -260,7 +261,6 @@ Init.init();
 <ul>
     <li>TODO:</li>
     <li>Some labels scrolling off end</li>
-    <li>Venus, Mercury disappear if sun, moon, or twilight deselected</li>
     <li>Save settings</li>
     <li>Auto zoom on load</li>
     <li>Detailed rise/set/phase on hover/click</li>
